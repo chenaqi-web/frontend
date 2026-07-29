@@ -46,16 +46,19 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="friend-poster" aria-label="社团朋友们的手绘合照">
+        <div className="club-poster" aria-label="社团少女的手绘人物海报">
           <span className="poster-tape left" /><span className="poster-tape right" />
           <span className="poster-star">★</span><span className="poster-heart">♡</span>
-          <div className="friend-group">
-            <div className="friend pink"><i>⌒</i><b>•ᴗ•</b><small>IDEA!</small></div>
-            <div className="friend purple"><i>〰</i><b>◕ᴗ◕</b><small>CREATE!</small></div>
-            <div className="friend blue"><i>⌁</i><b>•▽•</b><small>PLAY!</small></div>
+          <div className="club-girl">
+            <div className="girl-hair-back" />
+            <div className="girl-neck" />
+            <div className="girl-face"><span className="girl-bangs"/><i className="girl-eye left"/><i className="girl-eye right"/><b className="girl-mouth">⌣</b><em className="girl-blush left"/><em className="girl-blush right"/></div>
+            <div className="girl-body"><span className="girl-collar"/><b>R</b></div>
+            <span className="girl-arm left"/><span className="girl-arm right"/>
+            <div className="girl-sketchbook">OUR<br/><b>STORY!</b><span>★</span></div>
           </div>
-          <div className="friend-ground">✿　♡　★　✿　♡</div>
-          <p>WE FOUND EACH OTHER!</p>
+          <div className="poster-words"><span>CREATE</span><span>TOGETHER</span><span>✦ 2026 ✦</span></div>
+          <p>LET'S MAKE SOMETHING MEANINGFUL!</p>
         </div>
       </section>
 
