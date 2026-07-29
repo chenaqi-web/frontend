@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { pingGateway } from '@/api/health'
-import './HomePage.css'
 
 type GatewayState = 'loading' | 'online' | 'offline'
 
