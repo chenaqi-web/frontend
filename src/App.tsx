@@ -4,7 +4,7 @@ import { routes } from '@/router/routes'
 
 function App() {
   const pathname = usePathname()
-  const route = routes.find((item) => item.path === pathname) ?? routes[0]
+  const route = routes.find((item) => item.path === pathname || (item.path.includes('/:') && pathname.startsWith(item.path.split('/:')[0] + '/'))) ?? routes[0]
 
   if (pathname.startsWith('/admin')) return route.element
   return <SiteLayout pathname={pathname}>{route.element}</SiteLayout>

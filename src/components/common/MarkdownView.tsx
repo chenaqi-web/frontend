@@ -8,25 +8,15 @@ interface Props {
   className?: string
 }
 
-marked.setOptions({
-  breaks: true,
-  gfm: true,
-})
+marked.setOptions({ breaks: true, gfm: true })
 
 export default function MarkdownView({ content, className }: Props) {
   const html = useMemo(() => {
     if (!content) return ''
     const resolved = resolveMarkdownImages(content)
-    const raw = marked.parse(resolved, { async: false }) as string
-    return DOMPurify.sanitize(raw, {
-      ADD_ATTR: ['target', 'rel'],
-    })
+    const raw = marked.parse(resolved) as string
+    return DOMPurify.sanitize(raw)
   }, [content])
 
-  return (
-    <div
-      className={className ?? 'markdown-body'}
-      dangerouslySetInnerHTML={{ __html: html }}
-    />
-  )
+  return <div className={className ?? 'markdown-body'} dangerouslySetInnerHTML={{ __html: html }} />
 }

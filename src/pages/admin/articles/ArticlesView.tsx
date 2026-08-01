@@ -1,99 +1,165 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { articleApi } from '@/api/article'
-import type { Article } from '@/types/article'
+import { categoryApi } from '@/api/category'
+import { navigate } from '@/hooks/usePathname'
 import type { AdminArticle } from '@/pages/admin/types'
+import type { Category, CategoryType } from '@/types/category'
+import type { Article } from '@/types/article'
 
-const toAdminArticle = (article: Article): AdminArticle => ({
-  id: String(article.id),
+interface Props {
+  articles: AdminArticle[]
+  onArticlesChange: (articles: AdminArticle[]) => void
+  onDelete: (id: string) => void
+}
+
+const toAdminArticles = (articles: Article[]): AdminArticle[] => articles.map((article) => ({
+  id: article.id,
   title: article.title,
   authorName: article.authorName,
   categoryID: Number(article.categoryID) || undefined,
   viewCount: article.viewCount,
   createdAt: article.createdAt,
   isTop: article.isTop,
-})
+}))
 
-const demoArticles: AdminArticle[] = [
-  { id: '101', title: '夏日社团活动记录', authorName: '小爱', categoryID: 1, viewCount: 1280, createdAt: Date.now() / 1000 },
-  { id: '102', title: '给新手的内容发布指南', authorName: 'Mio', categoryID: 2, viewCount: 826, createdAt: Date.now() / 1000 - 86400 },
-  { id: '103', title: 'RenaiTeam 本周资讯', authorName: '小凛', categoryID: 3, viewCount: 456, createdAt: Date.now() / 1000 - 172800 },
-]
+export default function ArticlesView({ articles, onArticlesChange, onDelete }: Props) {
+  const [types, setTypes] = useState<CategoryType[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [selectedType, setSelectedType] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('')
+  const [keyword, setKeyword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const token = localStorage.getItem('renai_access_token') ?? ''
 
-export function useArticles(token: string) {
-  const [articles, setArticles] = useState<AdminArticle[]>(demoArticles)
-  const [notice, setNotice] = useState('')
-
-  const refresh = useCallback(async () => {
+  const updateArticles = async (loader: () => ReturnType<typeof articleApi.list>) => {
+    setLoading(true)
+    setError('')
     try {
-      const res = await articleApi.list({}, token)
-      if (res.articles?.length) setArticles(res.articles.map(toAdminArticle))
+      const res = await loader()
+      onArticlesChange(toAdminArticles(res.articles ?? []))
     } catch {
-      setNotice('文章列表加载失败')
+      setError('文章加载失败，请稍后重试')
+    } finally {
+      setLoading(false)
     }
-  }, [token])
+  }
+
+  const showAll = () => {
+    setSelectedType('')
+    setSelectedCategory('')
+    setCategories([])
+    void updateArticles(() => articleApi.list({ page: 1, pageSize: 100 }, token))
+  }
+
+  const selectType = async (typeID: string) => {
+    setSelectedType(typeID)
+    setSelectedCategory('')
+    setError('')
+    try {
+      const res = await categoryApi.listCategories({ parentID: Number(typeID) }, token)
+      setCategories((res.categories ?? []).map((category) => ({
+        ...category,
+        id: String(category.id),
+        parentID: String(category.parentID),
+      })))
+    } catch {
+      setCategories([])
+      setError('二级分类加载失败')
+    }
+  }
+
+  const selectCategory = (categoryID: string) => {
+    setSelectedCategory(categoryID)
+    void updateArticles(() => articleApi.byCategory(Number(categoryID), { page: 1, pageSize: 100 }, token))
+  }
+
+  const search = (event: React.SyntheticEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const q = keyword.trim()
+    if (!q) {
+      showAll()
+      return
+    }
+    setSelectedType('')
+    setSelectedCategory('')
+    setCategories([])
+    void updateArticles(() => articleApi.search(q, { page: 1, pageSize: 100 }, token))
+  }
 
   useEffect(() => {
-    void refresh()
-  }, [refresh])
-
-  const removeArticle = useCallback(async (id: string) => {
-    if (!window.confirm('确定要删除这篇文章吗？')) return
-    try {
-      await articleApi.delete({ id: Number(id), authorID: 0 }, token)
-      setArticles((prev) => prev.filter((item) => item.id !== id))
-      setNotice('文章已移入回收站')
-    } catch {
-      setNotice('删除失败，请确认登录身份')
-    }
+    categoryApi.listTypes(token)
+      .then((res) => setTypes((res.types ?? []).map((type) => ({ ...type, id: String(type.id) }))))
+      .catch(() => setError('一级分类加载失败'))
   }, [token])
 
-  return { articles, notice, setNotice, removeArticle }
-}
-
-interface Props {
-  articles: AdminArticle[]
-  onDelete: (id: string) => void
-}
-
-export default function ArticlesView({ articles, onDelete }: Props) {
   return (
-    <div className="admin-card table-card">
+    <div className="admin-card table-card articles-manager">
+      <form className="article-search" onSubmit={search}>
+        <input
+          value={keyword}
+          onChange={(event) => setKeyword(event.target.value)}
+          placeholder="搜索文章标题或内容"
+          aria-label="搜索文章"
+        />
+        <button type="submit">搜索</button>
+      </form>
+
+      <div className="article-category-panel">
+        <div className="article-category-row">
+          <button type="button" className={!selectedType ? 'active' : ''} onClick={showAll}>全部文章</button>
+          {types.map((type) => (
+            <button
+              type="button"
+              key={type.id}
+              className={selectedType === type.id ? 'active' : ''}
+              onClick={() => void selectType(type.id)}
+            >
+              {type.name}
+            </button>
+          ))}
+        </div>
+        {selectedType && (
+          <div className="article-category-row article-subcategories">
+            {categories.length ? categories.map((category) => (
+              <button
+                type="button"
+                key={category.id}
+                className={selectedCategory === category.id ? 'active' : ''}
+                onClick={() => selectCategory(category.id)}
+              >
+                {category.name}
+              </button>
+            )) : <span>该分类暂无二级分类</span>}
+          </div>
+        )}
+      </div>
+
       <div className="card-title">
         <div>
-          <h2>所有文章</h2>
-          <small>管理发布、编辑和删除内容</small>
+          <h2>{selectedCategory ? categories.find((item) => item.id === selectedCategory)?.name : '文章列表'}</h2>
+          <small>{loading ? '正在加载…' : `共 ${articles.length} 篇文章`}</small>
         </div>
-        <button type="button" className="minimal-button">
-          ＋ 新建文章
-        </button>
       </div>
+      {error && <div className="article-load-error">{error}</div>}
       <div className="table-wrap">
         <table>
-          <thead>
-            <tr>
-              <th>文章标题</th>
-              <th>作者</th>
-              <th>浏览</th>
-              <th>状态</th>
-              <th>操作</th>
-            </tr>
-          </thead>
+          <thead><tr><th>文章标题</th><th>作者</th><th>浏览</th><th>状态</th><th>操作</th></tr></thead>
           <tbody>
-            {articles.map((a) => (
-              <tr key={a.id}>
-                <td>
-                  <b>{a.isTop && '📌 '}{a.title}</b>
-                  <small>#{a.id}</small>
-                </td>
-                <td>{a.authorName ?? '匿名'}</td>
-                <td>{a.viewCount ?? 0}</td>
+            {!loading && articles.map((article) => (
+              <tr key={article.id}>
+                <td><b>{article.isTop && '置顶 · '}{article.title}</b><small>#{article.id}</small></td>
+                <td>{article.authorName ?? '匿名'}</td>
+                <td>{article.viewCount ?? 0}</td>
                 <td><span className="status status-muted">已发布</span></td>
                 <td>
-                  <button type="button" className="text-button">编辑</button>
-                  <button type="button" className="text-button danger" onClick={() => onDelete(a.id)}>删除</button>
+                  <button type="button" className="text-button" onClick={() => navigate(`/blog/${article.id}`, { from: 'admin-articles' })}>查看</button>
+                  <button type="button" className="text-button" onClick={() => navigate(`/blog/${article.id}`, { from: 'admin-articles' })}>编辑</button>
+                  <button type="button" className="text-button danger" onClick={() => onDelete(article.id)}>删除</button>
                 </td>
               </tr>
             ))}
+            {!loading && !articles.length && <tr><td colSpan={5} className="article-empty">暂无文章</td></tr>}
           </tbody>
         </table>
       </div>

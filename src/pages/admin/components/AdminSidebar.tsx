@@ -1,4 +1,4 @@
-import { ADMIN_MENU, type AdminTab } from '@/pages/admin/types'
+import { ADMIN_MENU, TAB_PATHS, type AdminTab } from '@/pages/admin/types'
 
 interface Props {
   tab: AdminTab
@@ -21,7 +21,11 @@ export default function AdminSidebar({ tab, onChange }: Props) {
             key={item.id}
             type="button"
             className={tab === item.id ? 'active' : ''}
-            onClick={() => onChange(item.id)}
+            onClick={() => {
+              onChange(item.id)
+              window.history.pushState({}, '', TAB_PATHS[item.id])
+              window.dispatchEvent(new PopStateEvent('popstate'))
+            }}
           >
             <i>{item.icon}</i>
             {item.label}

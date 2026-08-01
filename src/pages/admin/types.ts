@@ -17,12 +17,12 @@ export interface AdminArticle {
 }
 
 export const ADMIN_MENU: { id: AdminTab; label: string; icon: string }[] = [
-  { id: 'dashboard', label: '工作台', icon: '◐' },
-  { id: 'articles', label: '文章管理', icon: '▤' },
-  { id: 'categories', label: '分类管理', icon: '▦' },
-  { id: 'users', label: '用户详情', icon: '◔' },
-  { id: 'likes', label: '点赞列表', icon: '♥' },
-  { id: 'settings', label: '系统设置', icon: '⚙' },
+  { id: 'dashboard', label: '工作台', icon: '🏠' },
+  { id: 'articles', label: '文章管理', icon: '📝' },
+  { id: 'categories', label: '分类管理', icon: '🏷️' },
+  { id: 'users', label: '用户详情', icon: '👤' },
+  { id: 'likes', label: '点赞列表', icon: '♡' },
+  { id: 'settings', label: '系统设置', icon: '⚙️' },
 ]
 
 export const TAB_TITLES: Record<AdminTab, string> = {
@@ -32,4 +32,13 @@ export const TAB_TITLES: Record<AdminTab, string> = {
   users: '用户详情',
   likes: '点赞列表',
   settings: '系统设置',
+}
+
+export const TAB_PATHS: Record<AdminTab, string> = {
+  dashboard: '/admin',
+  articles: '/admin/blog',
+  categories: '/admin/categories',
+  users: '/admin/users',
+  likes: '/admin/likes',
+  settings: '/admin/settings',
 }

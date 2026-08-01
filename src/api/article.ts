@@ -16,6 +16,20 @@ export const articleApi = {
       token: token || undefined,
     })
   },
+  byCategory(categoryID: number, params: ListArticlesRequest = {}, token?: string) {
+    return request<ListArticlesResponse>('/v1/article/list/by_cate', {
+      method: 'POST',
+      body: { categoryID, ...params },
+      token: token || undefined,
+    })
+  },
+  search(q: string, params: ListArticlesRequest = {}, token?: string) {
+    return request<ListArticlesResponse>('/v1/article/search', {
+      method: 'POST',
+      body: { q, ...params },
+      token: token || undefined,
+    })
+  },
   detail(payload: GetArticleRequest, token?: string) {
     return request<GetArticleResponse>('/v1/article/message', {
       method: 'POST',
