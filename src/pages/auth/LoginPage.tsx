@@ -1,6 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import AppLink from '@/components/common/AppLink'
 import { authApi } from '@/api/auth'
+import { navigate } from '@/hooks/usePathname'
 
 export default function LoginPage() {
   const [message, setMessage] = useState('')
@@ -10,8 +11,10 @@ export default function LoginPage() {
     const data = new FormData(event.currentTarget)
     setMessage('正在验证基地暗号…')
     try {
-      await authApi.login({ account: String(data.get('account')), password: String(data.get('password')) })
-      setMessage('登录成功，欢迎回来！')
+      const auth = await authApi.login({ account: String(data.get('account')), password: String(data.get('password')) })
+      if (auth?.accessToken) localStorage.setItem('renai_access_token', auth.accessToken)
+      setMessage('登录成功，正在进入秘密基地…')
+      window.setTimeout(() => { navigate('/admin') }, 450)
     } catch (error) {
       setMessage(error instanceof Error ? error.message : '登录失败，请稍后重试')
     }

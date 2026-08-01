@@ -14,10 +14,10 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       proxy: {
+        // 保留 /api 前缀：gateway 路由挂在 /api/v1，不能 rewrite 掉
         '/api': {
           target: gatewayTarget,
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api/, ''),
         },
       },
     },

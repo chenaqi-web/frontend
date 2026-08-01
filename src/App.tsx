@@ -6,6 +6,7 @@ function App() {
   const pathname = usePathname()
   const route = routes.find((item) => item.path === pathname) ?? routes[0]
 
+  if (pathname.startsWith('/admin')) return route.element
   return <SiteLayout pathname={pathname}>{route.element}</SiteLayout>
 }
 

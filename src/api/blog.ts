@@ -1,5 +1,5 @@
-import { request } from '@/lib/http'
-import type { ApiResponse, PageResponse } from '@/types/api'
+import { request } from '@/api/http.ts'
+import type { PageResponse } from '@/types/api'
 import type { BlogCategory, BlogComment, BlogListRequest, BlogPost, CreateCommentRequest } from '@/types/blog'
 
 function toQuery(params: Record<string, string | number | undefined>) {
@@ -12,10 +12,10 @@ function toQuery(params: Record<string, string | number | undefined>) {
 
 export const blogApi = {
   categories() {
-    return request<ApiResponse<BlogCategory[]>>('/v1/blog/categories')
+    return request<BlogCategory[]>('/v1/blog/categories')
   },
   posts(params: BlogListRequest) {
-    return request<ApiResponse<PageResponse<BlogPost>>>(`/v1/blog/posts?${toQuery({
+    return request<PageResponse<BlogPost>>(`/v1/blog/posts?${toQuery({
       page: params.page,
       pageSize: params.pageSize,
       categoryId: params.categoryId,
@@ -23,10 +23,10 @@ export const blogApi = {
     })}`)
   },
   postDetail(id: string) {
-    return request<ApiResponse<BlogPost>>(`/v1/blog/posts/${id}`)
+    return request<BlogPost>(`/v1/blog/posts/${id}`)
   },
   comments(postId: string, params: BlogListRequest) {
-    return request<ApiResponse<PageResponse<BlogComment>>>(`/v1/blog/posts/${postId}/comments?${toQuery({
+    return request<PageResponse<BlogComment>>(`/v1/blog/posts/${postId}/comments?${toQuery({
       page: params.page,
       pageSize: params.pageSize,
       categoryId: params.categoryId,
@@ -34,7 +34,7 @@ export const blogApi = {
     })}`)
   },
   createComment(postId: string, payload: CreateCommentRequest, token: string) {
-    return request<ApiResponse<BlogComment>>(`/v1/blog/posts/${postId}/comments`, {
+    return request<BlogComment>(`/v1/blog/posts/${postId}/comments`, {
       method: 'POST', body: payload, token,
     })
   },

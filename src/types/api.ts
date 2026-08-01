@@ -1,6 +1,6 @@
 export interface ApiResponse<T> {
   code: number
-  message: string
+  msg: string
   data: T
 }
 
@@ -14,9 +14,4 @@ export interface PageResponse<T> {
   total: number
   page: number
   pageSize: number
-}
-
-export interface ApiErrorBody {
-  code?: number
-  message?: string
 }
