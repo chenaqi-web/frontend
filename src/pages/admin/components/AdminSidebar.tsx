@@ -2,21 +2,23 @@ import { ADMIN_MENU, TAB_PATHS, type AdminTab } from '@/pages/admin/types'
 
 interface Props {
   tab: AdminTab
+  role: string
   onChange: (tab: AdminTab) => void
 }
 
-export default function AdminSidebar({ tab, onChange }: Props) {
+export default function AdminSidebar({ tab, role, onChange }: Props) {
+  const visibleMenu = ADMIN_MENU.filter((item) => !item.roles || item.roles.includes(role))
+
   return (
     <aside className="admin-sidebar">
       <div className="admin-logo">
-        <span>R</span>
         <div>
           <b>RenaiTeam</b>
           <small>管理后台</small>
         </div>
       </div>
       <div className="admin-menu">
-        {ADMIN_MENU.map((item) => (
+        {visibleMenu.map((item) => (
           <button
             key={item.id}
             type="button"
@@ -27,12 +29,10 @@ export default function AdminSidebar({ tab, onChange }: Props) {
               window.dispatchEvent(new PopStateEvent('popstate'))
             }}
           >
-            <i>{item.icon}</i>
             {item.label}
           </button>
         ))}
       </div>
-      <div className="admin-sidebar-doodle">♡ ★ ☁</div>
     </aside>
   )
 }

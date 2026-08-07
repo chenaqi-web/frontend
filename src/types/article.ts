@@ -25,6 +25,20 @@ export interface ListArticlesResponse {
   articles: Article[]
 }
 
+export interface CreateArticleRequest {
+  authorID: number
+  title: string
+  summary?: string
+  content: string
+  coverImage?: string
+  categoryID: number
+  isTop?: boolean
+}
+
+export interface ListMyArticlesRequest extends ListArticlesRequest {
+  authorID: number
+}
+
 export interface GetArticleRequest {
   id: number
 }

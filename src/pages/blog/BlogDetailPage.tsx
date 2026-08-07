@@ -1,8 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { articleApi } from '@/api/article'
+import { commentApi } from '@/api/comment'
+import { likeApi } from '@/api/like'
+import { userApi } from '@/api/user'
 import MarkdownView from '@/components/common/MarkdownView'
 import { navigate } from '@/hooks/usePathname'
 import type { Article } from '@/types/article'
+import type { CommentItem } from '@/types/comment'
+import type { CurrentUser } from '@/types/user'
 import { resolveStorageUrl } from '@/utils/storage'
 import './BlogPage.css'
 
@@ -15,21 +20,68 @@ export default function BlogDetailPage() {
   const articleId = getArticleId()
   const token = localStorage.getItem('renai_access_token') ?? ''
   const [article, setArticle] = useState<Article | null>(null)
+  const [comments, setComments] = useState<CommentItem[]>([])
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
+  const [commentText, setCommentText] = useState('')
   const [loading, setLoading] = useState(true)
+  const [commentsLoading, setCommentsLoading] = useState(false)
+  const [commentSubmitting, setCommentSubmitting] = useState(false)
+  const [liked, setLiked] = useState(false)
+  const [likeLoading, setLikeLoading] = useState(false)
+  const userId = Number(localStorage.getItem('renai_user_id') ?? 0)
 
   useEffect(() => {
     if (!articleId) return
     setLoading(true)
     articleApi
       .detail({ id: Number(articleId) }, token)
-      .then((articleRes) => {
-        setArticle(articleRes.article ?? null)
-      })
-      .catch(() => {
-        setArticle(null)
-      })
+      .then((articleRes) => setArticle(articleRes.article ?? null))
+      .catch(() => setArticle(null))
       .finally(() => setLoading(false))
   }, [articleId, token])
+
+  useEffect(() => {
+    if (!articleId) return
+    setCommentsLoading(true)
+    commentApi.list({ articleId: Number(articleId), page: 1, size: 50 }, token)
+      .then((res) => setComments(res.comments ?? []))
+      .catch(() => setComments([]))
+      .finally(() => setCommentsLoading(false))
+  }, [articleId, token])
+
+  useEffect(() => {
+    if (!token) return
+    userApi.current(token).then(setCurrentUser).catch(() => setCurrentUser(null))
+  }, [token])
+
+  const submitComment = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const content = commentText.trim()
+    if (!content || !articleId || !currentUser || commentSubmitting) return
+    setCommentSubmitting(true)
+    try {
+      await commentApi.create({ articleId: Number(articleId), userId: currentUser.id, content }, token)
+      const res = await commentApi.list({ articleId: Number(articleId), page: 1, size: 50 }, token)
+      setComments(res.comments ?? [])
+      setCommentText('')
+    } finally {
+      setCommentSubmitting(false)
+    }
+  }
+
+  const toggleLike = async () => {
+    if (!article || likeLoading || !currentUser) return
+    setLikeLoading(true)
+    try {
+      const payload = { userId: currentUser.id, objectType: 'article', objectId: Number(article.id) }
+      if (liked) await likeApi.cancelThumbUp(payload, token)
+      else await likeApi.thumbUp(payload, token)
+      setLiked(!liked)
+      setArticle({ ...article, likeCount: Math.max(0, article.likeCount + (liked ? -1 : 1)) })
+    } finally {
+      setLikeLoading(false)
+    }
+  }
 
   const toc = useMemo(() => {
     if (!article?.content) return [] as { id: string; text: string; level: number }[]

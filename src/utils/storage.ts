@@ -1,15 +1,17 @@
+import { env } from '@/config/env'
+
 const isAbsoluteURL = (url: string) =>
   url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')
 
 const normalizeStoragePath = (url: string) => url.replace(/^\/+/, '')
 
 export function resolveStorageUrl(url: string): string {
-  if (!url) return url
+  if (!url || url === 'undefined' || url === 'null') return ''
   if (isAbsoluteURL(url)) return url
 
   const normalized = normalizeStoragePath(url)
   if (normalized.startsWith('static/upload')) {
-    return `/${normalized}`
+    return `${window.location.origin}/${normalized}`
   }
 
   return url

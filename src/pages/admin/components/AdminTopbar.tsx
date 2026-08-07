@@ -6,8 +6,12 @@ interface Props {
 }
 
 export default function AdminTopbar({ tab }: Props) {
+  const currentUser = JSON.parse(localStorage.getItem('renai_current_user') ?? '{}') as { username?: string }
+  const username = currentUser.username || '用户'
+
   const logout = () => {
     localStorage.removeItem('renai_access_token')
+    localStorage.removeItem('renai_current_user')
     navigate('/login')
   }
 
@@ -18,9 +22,8 @@ export default function AdminTopbar({ tab }: Props) {
         <h1>{TAB_TITLES[tab]}</h1>
       </div>
       <div className="admin-user">
-        <div>
-          <b>站长小爱</b>
-          <small>超级管理员</small>
+        <div className="admin-user-name">
+          <b>{username}</b>
         </div>
         <button type="button" className="admin-logout" onClick={logout}>
           退出登录

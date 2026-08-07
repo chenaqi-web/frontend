@@ -1,30 +1,37 @@
-export interface LoginRequest {
-  account: string
-  password: string
-}
-
-export interface RegisterRequest {
-  nickname: string
-  email: string
-  password: string
-  emailCode: string
-}
+export type EmailCodePurpose = 'register' | 'login'
 
 export interface SendEmailCodeRequest {
   email: string
-  scene: 'register' | 'login' | 'reset_password'
+  purpose: EmailCodePurpose
+}
+
+export interface EmailLoginRequest {
+  email: string
+  code: string
+}
+
+export interface RegisterRequest {
+  username: string
+  email: string
+  password: string
+  code: string
 }
 
 export interface AuthUser {
-  id: string
-  nickname: string
+  id: number
+  username: string
   email: string
-  avatar?: string
+  phone: string
+  avatar: string
+  sex: string
+  age: number
+  role: string
+  status: string
+  authVersion: number
 }
 
 export interface AuthResponse {
-  accessToken: string
-  refreshToken: string
-  expiresIn: number
+  access_token: string
+  access_expires_in: number
   user: AuthUser
 }

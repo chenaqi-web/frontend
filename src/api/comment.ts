@@ -1,65 +1,31 @@
 import { request } from '@/api/http'
-import type { PageResponse } from '@/types/api'
+import type {
+  CommentBoolResponse,
+  CommentListResponse,
+  CommentRepliesResponse,
+  CreateCommentRequest,
+  CreateReplyRequest,
+  DeleteCommentRequest,
+  GetArticleCommentsRequest,
+  GetCommentRepliesRequest,
+} from '@/types/comment'
 
-export interface CommentAuthor {
-  id: string
-  nickname: string
-  avatar?: string
-}
-
-export interface CommentItem {
-  id: string
-  articleId: string
-  userId: string
-  parentId: string
-  rootId: string
-  replyToId: string
-  replyToName: string
-  content: string
-  likeCount: number
-  childCount: number
-  createdAt: string
-  userName: string
-  userAvatar: string
-  replies?: CommentItem[]
-}
-
-export interface CommentListRequest {
-  page?: number
-  pageSize?: number
-}
-
-export interface CommentListResponse extends PageResponse<CommentItem> {}
-
-export interface CreateCommentRequest {
-  articleId: number
-  userId: number
-  content: string
-}
-
-export interface CreateReplyRequest {
-  rootId: number
-  userId: number
-  replyToId: number
-  replyToName: string
-  content: string
-}
+const options = (token?: string) => ({ token: token || undefined })
 
 export const commentApi = {
-  list(articleId: string, params: CommentListRequest = {}, token?: string) {
-    const search = new URLSearchParams()
-    if (params.page !== undefined) search.set('page', String(params.page))
-    if (params.pageSize !== undefined) search.set('pageSize', String(params.pageSize))
-    return request<CommentListResponse>(`/v1/comments/article/${articleId}?${search.toString()}`, {
-      method: 'GET',
-      token: token || undefined,
-    })
+  list(payload: GetArticleCommentsRequest, token?: string) {
+    return request<CommentListResponse>('/v1/comment/list', { method: 'POST', body: payload, ...options(token) })
+  },
+  replies(payload: GetCommentRepliesRequest, token?: string) {
+    return request<CommentRepliesResponse>('/v1/comment/replies', { method: 'POST', body: payload, ...options(token) })
   },
   create(payload: CreateCommentRequest, token?: string) {
-    return request<{ success: boolean }>('/v1/comments/create', {
-      method: 'POST',
-      body: payload,
-      token: token || undefined,
-    })
+    return request<CommentBoolResponse>('/v1/comment/create', { method: 'POST', body: payload, ...options(token) })
+  },
+  reply(payload: CreateReplyRequest, token?: string) {
+    return request<CommentBoolResponse>('/v1/comment/reply', { method: 'POST', body: payload, ...options(token) })
+  },
+  delete(payload: DeleteCommentRequest, token?: string) {
+    return request<CommentBoolResponse>('/v1/comment/delete', { method: 'DELETE', body: payload, ...options(token) })
   },
 }

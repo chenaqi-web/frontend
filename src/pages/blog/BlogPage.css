@@ -29,49 +29,54 @@
 }
 
 .blog-category-panel {
-  margin-bottom: 22px;
+  margin-bottom: 28px;
+  padding: 16px 20px;
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 .blog-category-row,
 .blog-subcategory-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 9px;
 }
 
 .blog-subcategory-row {
-  padding-top: 12px;
-  padding-left: 18px;
-  border-top: 2px dashed rgba(81, 71, 104, 0.22);
-  border-left: 3px dashed rgba(81, 71, 104, 0.3);
-}
-
-.blog-subcategory-row > span {
-  color: #8c8099;
-  font-weight: 700;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
 }
 
 .blog-category-row button,
 .blog-subcategory-row button {
-  padding: 7px 14px;
-  border: 2px solid var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 9px;
   background: #fff;
-  font: 700 16px 'Gaegu', cursive;
+  color: var(--muted);
+  font: 700 14px 'Noto Sans SC', sans-serif;
   cursor: pointer;
+  transition: .2s ease;
+}
+
+.blog-category-row button {
+  min-width: 92px;
+  padding: 10px 16px;
 }
 
 .blog-subcategory-row button {
-  font-size: 15px;
-  padding: 5px 12px;
-  background: #fffdf6;
+  padding: 7px 13px;
+  border-radius: 999px;
 }
 
+.blog-category-row button:hover,
 .blog-category-row button.active,
+.blog-subcategory-row button:hover,
 .blog-subcategory-row button.active {
-  background: var(--pink);
+  border-color: var(--blue);
+  background: var(--blue);
   color: #fff;
+  box-shadow: 0 7px 16px rgba(57, 116, 230, .2);
+  transform: translateY(-1px);
 }
 
 .blog-page .blog-loading,
@@ -144,8 +149,9 @@
   line-height: 1.4;
   font-weight: 700;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
 }
 
@@ -265,6 +271,9 @@
 }
 
 @media (max-width: 760px) {
+  .category-panel-heading { align-items: start; flex-direction: column; }
+  .blog-subcategory-row { grid-template-columns: 1fr; gap: 10px; }
+  .subcategory-label { padding: 0 0 9px; border-right: 0; border-bottom: 1px solid #ceddf6; }
   .blog-page .blog-grid { grid-template-columns: 1fr; }
   .blog-page .blog-card { grid-template-columns: 1fr; }
   .blog-page .blog-cover { min-height: 140px; border-right: 0; border-bottom: 3px solid var(--ink); }

@@ -25,6 +25,7 @@ export const routes: AppRoute[] = [
   { path: '/about', label: '关于我们', element: <AboutPage />, showInNav: true },
   { path: '/login', label: '登录', element: <LoginPage /> },
   { path: '/register', label: '注册', element: <RegisterPage /> },
+  { path: '/admin/create', label: '后台创作内容', element: <AdminPage /> },
   { path: '/admin/blog', label: '后台文章管理', element: <AdminPage /> },
   { path: '/admin/categories', label: '后台分类管理', element: <AdminPage /> },
   { path: '/admin/users', label: '后台用户详情', element: <AdminPage /> },

@@ -4,6 +4,7 @@ import type { ApiResponse } from '@/types/api.ts'
 interface RequestOptions extends Omit<RequestInit, 'body'> {
   body?: unknown
   token?: string
+  formData?: FormData
 }
 
 function isApiEnvelope(payload: unknown): payload is ApiResponse<unknown> {
@@ -29,14 +30,14 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   const headers = new Headers(options.headers)
 
   headers.set('Accept', 'application/json')
-  if (options.body !== undefined) headers.set('Content-Type', 'application/json')
+  if (options.body !== undefined && !options.formData) headers.set('Content-Type', 'application/json')
   if (options.token) headers.set('Authorization', `Bearer ${options.token}`)
 
   try {
     const response = await fetch(`${env.apiBaseUrl}${path}`, {
       ...options,
       headers,
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      body: options.formData ?? (options.body === undefined ? undefined : JSON.stringify(options.body)),
       signal: controller.signal,
     })
     const isJson = response.headers.get('content-type')?.includes('application/json')

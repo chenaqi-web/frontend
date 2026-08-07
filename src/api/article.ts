@@ -1,7 +1,9 @@
 import { request } from '@/api/http'
 import type {
   ArticleBoolResponse,
+  CreateArticleRequest,
   DeleteArticleRequest,
+  ListMyArticlesRequest,
   GetArticleRequest,
   GetArticleResponse,
   ListArticlesRequest,
@@ -29,6 +31,12 @@ export const articleApi = {
       body: { q, ...params },
       token: token || undefined,
     })
+  },
+  create(payload: CreateArticleRequest, token: string) {
+    return request<ArticleBoolResponse>('/v1/article/create', { method: 'POST', body: payload, token })
+  },
+  listByUser(payload: ListMyArticlesRequest, token: string) {
+    return request<ListArticlesResponse>('/v1/article/list/by_user_id', { method: 'POST', body: payload, token })
   },
   detail(payload: GetArticleRequest, token?: string) {
     return request<GetArticleResponse>('/v1/article/message', {

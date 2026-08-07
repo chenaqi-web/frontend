@@ -21,7 +21,7 @@ export default function BlogPage() {
 
   useEffect(() => {
     categoryApi.listTypes(token)
-      .then((res) => setTypes(res.types ?? []))
+      .then((res) => setTypes((res.types ?? []).filter((type) => type.name?.trim())))
       .catch(() => setTypes([]))
   }, [token])
 
@@ -31,21 +31,48 @@ export default function BlogPage() {
       return
     }
     categoryApi.listCategories({ parentID: Number(selectedType) }, token)
-      .then((res) => setSubCategories(res.categories ?? []))
+      .then((res) => setSubCategories((res.categories ?? []).filter((category) => category.name?.trim())))
       .catch(() => setSubCategories([]))
   }, [selectedType, token])
 
   useEffect(() => {
+    let active = true
     setLoading(true)
-    const loader = selectedSub === 'all'
-      ? articleApi.list({ page: 1, pageSize: PAGE_SIZE }, token)
-      : articleApi.byCategory(Number(selectedSub), { page: 1, pageSize: PAGE_SIZE }, token)
 
-    loader
-      .then((res) => setArticles(res.articles ?? []))
-      .catch(() => setArticles([]))
-      .finally(() => setLoading(false))
-  }, [selectedSub, token])
+    const loadArticles = async () => {
+      try {
+        if (selectedType === 'all') {
+          const res = await articleApi.list({ page: 1, pageSize: PAGE_SIZE }, token)
+          if (active) setArticles(res.articles ?? [])
+          return
+        }
+
+        if (selectedSub !== 'all') {
+          const res = await articleApi.byCategory(Number(selectedSub), { page: 1, pageSize: PAGE_SIZE }, token)
+          if (active) setArticles(res.articles ?? [])
+          return
+        }
+
+        const res = await categoryApi.listCategories({ parentID: Number(selectedType) }, token)
+        const categoryResults = await Promise.all(
+          (res.categories ?? []).map((category) => articleApi.byCategory(Number(category.id), { page: 1, pageSize: PAGE_SIZE }, token)),
+        )
+        if (active) {
+          const merged = categoryResults.flatMap((result) => result.articles ?? [])
+          setArticles(Array.from(new Map(merged.map((article) => [article.id, article])).values()))
+        }
+      } catch {
+        if (active) setArticles([])
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+
+    void loadArticles()
+    return () => {
+      active = false
+    }
+  }, [selectedType, selectedSub, token])
 
   const search = (event: React.SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -82,12 +109,6 @@ export default function BlogPage() {
 
   return (
     <main className="inner-page blog-page">
-      <header className="page-intro compact-panel">
-        <span>CLUB BLOG</span>
-        <h1>社团博客</h1>
-        <p>公告、脑洞、经验和偶尔认真写下来的长文章。</p>
-      </header>
-
       <form className="blog-search" onSubmit={search} role="search">
         <input
           value={searchText}
@@ -109,7 +130,7 @@ export default function BlogPage() {
         </div>
         {selectedType !== 'all' && (
           <div className="blog-subcategory-row">
-            {subCategories.length === 0 && <span>该分类暂无二级分类</span>}
+            <button type="button" className={selectedSub === 'all' ? 'active' : ''} onClick={() => selectSubCategory('all')}>全部</button>
             {subCategories.map((category) => (
               <button type="button" key={category.id} className={selectedSub === String(category.id) ? 'active' : ''} onClick={() => selectSubCategory(String(category.id))}>
                 {category.name}

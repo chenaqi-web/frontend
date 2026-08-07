@@ -2,27 +2,36 @@ import { useEffect, useState } from 'react'
 import { articleApi } from '@/api/article'
 import { categoryApi } from '@/api/category'
 import { navigate } from '@/hooks/usePathname'
+import { resolveStorageUrl } from '@/utils/storage'
 import type { AdminArticle } from '@/pages/admin/types'
 import type { Category, CategoryType } from '@/types/category'
 import type { Article } from '@/types/article'
+import AdminConfirmDialog from '@/pages/admin/components/AdminConfirmDialog'
 
 interface Props {
   articles: AdminArticle[]
+  token: string
+  userID: number
+  canManageAll: boolean
   onArticlesChange: (articles: AdminArticle[]) => void
-  onDelete: (id: string) => void
+  onDelete: (id: string) => void | Promise<void>
 }
 
 const toAdminArticles = (articles: Article[]): AdminArticle[] => articles.map((article) => ({
   id: article.id,
   title: article.title,
+  summary: article.summary,
+  coverImage: article.coverImage,
   authorName: article.authorName,
   categoryID: Number(article.categoryID) || undefined,
   viewCount: article.viewCount,
+  likeCount: article.likeCount,
+  commentCount: article.commentCount,
   createdAt: article.createdAt,
   isTop: article.isTop,
 }))
 
-export default function ArticlesView({ articles, onArticlesChange, onDelete }: Props) {
+export default function ArticlesView({ articles, userID, canManageAll, token, onArticlesChange, onDelete }: Props) {
   const [types, setTypes] = useState<CategoryType[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [selectedType, setSelectedType] = useState('')
@@ -30,7 +39,7 @@ export default function ArticlesView({ articles, onArticlesChange, onDelete }: P
   const [keyword, setKeyword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const token = localStorage.getItem('renai_access_token') ?? ''
+  const [articleToDelete, setArticleToDelete] = useState<string | null>(null)
 
   const updateArticles = async (loader: () => ReturnType<typeof articleApi.list>) => {
     setLoading(true)
@@ -49,23 +58,34 @@ export default function ArticlesView({ articles, onArticlesChange, onDelete }: P
     setSelectedType('')
     setSelectedCategory('')
     setCategories([])
-    void updateArticles(() => articleApi.list({ page: 1, pageSize: 100 }, token))
+    void updateArticles(() => canManageAll
+      ? articleApi.list({ page: 1, pageSize: 100 }, token)
+      : articleApi.listByUser({ authorID: userID, page: 1, pageSize: 100 }, token))
   }
 
   const selectType = async (typeID: string) => {
     setSelectedType(typeID)
     setSelectedCategory('')
     setError('')
+    setLoading(true)
     try {
       const res = await categoryApi.listCategories({ parentID: Number(typeID) }, token)
-      setCategories((res.categories ?? []).map((category) => ({
+      const nextCategories = (res.categories ?? []).map((category) => ({
         ...category,
         id: String(category.id),
         parentID: String(category.parentID),
-      })))
+      }))
+      setCategories(nextCategories)
+      const results = await Promise.all(
+        nextCategories.map((category) => articleApi.byCategory(Number(category.id), { page: 1, pageSize: 100 }, token)),
+      )
+      const merged = results.flatMap((result) => result.articles ?? [])
+      onArticlesChange(toAdminArticles(Array.from(new Map(merged.map((article) => [article.id, article])).values())))
     } catch {
       setCategories([])
-      setError('二级分类加载失败')
+      setError('分类文章加载失败')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -88,10 +108,11 @@ export default function ArticlesView({ articles, onArticlesChange, onDelete }: P
   }
 
   useEffect(() => {
+    if (!canManageAll) return
     categoryApi.listTypes(token)
       .then((res) => setTypes((res.types ?? []).map((type) => ({ ...type, id: String(type.id) }))))
       .catch(() => setError('一级分类加载失败'))
-  }, [token])
+  }, [canManageAll, token])
 
   return (
     <div className="admin-card table-card articles-manager">
@@ -105,7 +126,7 @@ export default function ArticlesView({ articles, onArticlesChange, onDelete }: P
         <button type="submit">搜索</button>
       </form>
 
-      <div className="article-category-panel">
+      {canManageAll && <div className="article-category-panel">
         <div className="article-category-row">
           <button type="button" className={!selectedType ? 'active' : ''} onClick={showAll}>全部文章</button>
           {types.map((type) => (
@@ -133,7 +154,7 @@ export default function ArticlesView({ articles, onArticlesChange, onDelete }: P
             )) : <span>该分类暂无二级分类</span>}
           </div>
         )}
-      </div>
+      </div>}
 
       <div className="card-title">
         <div>
@@ -142,27 +163,46 @@ export default function ArticlesView({ articles, onArticlesChange, onDelete }: P
         </div>
       </div>
       {error && <div className="article-load-error">{error}</div>}
-      <div className="table-wrap">
-        <table>
-          <thead><tr><th>文章标题</th><th>作者</th><th>浏览</th><th>状态</th><th>操作</th></tr></thead>
-          <tbody>
-            {!loading && articles.map((article) => (
-              <tr key={article.id}>
-                <td><b>{article.isTop && '置顶 · '}{article.title}</b><small>#{article.id}</small></td>
-                <td>{article.authorName ?? '匿名'}</td>
-                <td>{article.viewCount ?? 0}</td>
-                <td><span className="status status-muted">已发布</span></td>
-                <td>
-                  <button type="button" className="text-button" onClick={() => navigate(`/blog/${article.id}`, { from: 'admin-articles' })}>查看</button>
-                  <button type="button" className="text-button" onClick={() => navigate(`/blog/${article.id}`, { from: 'admin-articles' })}>编辑</button>
-                  <button type="button" className="text-button danger" onClick={() => onDelete(article.id)}>删除</button>
-                </td>
-              </tr>
-            ))}
-            {!loading && !articles.length && <tr><td colSpan={5} className="article-empty">暂无文章</td></tr>}
-          </tbody>
-        </table>
+      <div className="admin-article-list">
+        {!loading && articles.map((article) => (
+          <article className="admin-article-item" key={article.id} onClick={() => navigate(`/blog/${article.id}`, { from: 'admin-articles' })}>
+            {article.coverImage && (
+              <div className="admin-article-cover">
+                <img src={resolveStorageUrl(article.coverImage)} alt="" />
+              </div>
+            )}
+            <div className="admin-article-content">
+              <h3>{article.isTop && <span className="admin-article-top">置顶</span>}{article.title}</h3>
+              <p>{article.summary || '暂无文章摘要'}</p>
+              <div className="admin-article-meta">
+                <span>{article.authorName ?? '匿名'}</span>
+                <span>{new Date(article.createdAt * 1000).toLocaleDateString()}</span>
+                <span>{article.viewCount ?? 0} 阅读</span>
+                <span>{article.likeCount ?? 0} 点赞</span>
+                <span>{article.commentCount ?? 0} 评论</span>
+              </div>
+            </div>
+            <div className="admin-article-actions" onClick={(event) => event.stopPropagation()}>
+              <button type="button" className="text-button" onClick={() => navigate(`/blog/${article.id}`, { from: 'admin-articles' })}>查看</button>
+              <button type="button" className="text-button" onClick={() => navigate(`/blog/${article.id}`, { from: 'admin-articles' })}>编辑</button>
+              <button type="button" className="text-button danger" onClick={() => setArticleToDelete(article.id)}>删除</button>
+            </div>
+          </article>
+        ))}
+        {!loading && !articles.length && <div className="article-empty">暂无文章</div>}
       </div>
+
+      {articleToDelete && (
+        <AdminConfirmDialog
+          title="删除文章"
+          message="删除后无法恢复，确定要删除这篇文章吗？"
+          onCancel={() => setArticleToDelete(null)}
+          onConfirm={async () => {
+            await onDelete(articleToDelete)
+            setArticleToDelete(null)
+          }}
+        />
+      )}
     </div>
   )
 }
