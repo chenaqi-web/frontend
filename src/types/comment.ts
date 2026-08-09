@@ -16,21 +16,24 @@ export interface CommentItem {
 
 export interface CreateCommentRequest {
   articleId: number
-  userId: number
   content: string
+  /** 由服务端�?token 注入，无需传�?*/
+  userId?: number
 }
 
 export interface CreateReplyRequest {
   articleId: number
   parentId: number
-  userId: number
   replyToId?: number
   content: string
+  /** 由服务端�?token 注入，无需传�?*/
+  userId?: number
 }
 
 export interface DeleteCommentRequest {
   id: number
-  userId: number
+  /** 由服务端�?token 注入，无需传�?*/
+  userId?: number
 }
 
 export interface GetArticleCommentsRequest {

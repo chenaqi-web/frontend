@@ -11,4 +11,4 @@ export default function PlaceholderView({ title, hint }: Props) {
       <p>{hint}</p>
     </div>
   )
-}
+}

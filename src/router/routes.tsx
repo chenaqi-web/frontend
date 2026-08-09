@@ -16,6 +16,8 @@ export interface AppRoute {
   showInNav?: boolean
 }
 
+// 加入所有的路由，showInNav表示是否在导航栏显示
+
 export const routes: AppRoute[] = [
   { path: '/', label: '首页', element: <HomePage />, showInNav: true },
   { path: '/diary', label: '生活小记', element: <DiaryPage />, showInNav: true },

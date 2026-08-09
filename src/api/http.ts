@@ -1,66 +1,64 @@
-import { env } from '@/config/env.ts'
-import type { ApiResponse } from '@/types/api.ts'
+import { env } from '@/config/env'
+import { ACCESS_TOKEN_KEY } from '@/constants/auth'
+import type { ApiResponse } from '@/types/api'
 
-interface RequestOptions extends Omit<RequestInit, 'body'> {
+export interface RequestOptions {
+  method?: string
   body?: unknown
-  token?: string
-  formData?: FormData
+  auth?: boolean
+  token?: string | null
 }
 
-function isApiEnvelope(payload: unknown): payload is ApiResponse<unknown> {
-  return typeof payload === 'object'
-    && payload !== null
-    && 'code' in payload
-    && 'msg' in payload
-    && 'data' in payload
+export function getAccessToken() {
+  return localStorage.getItem(ACCESS_TOKEN_KEY)
 }
 
-function failMsg(payload: unknown, fallback: string) {
-  if (typeof payload === 'object' && payload !== null && 'msg' in payload) {
-    const msg = (payload as { msg?: unknown }).msg
-    if (typeof msg === 'string' && msg) return msg
+export function setAccessToken(token: string) {
+  localStorage.setItem(ACCESS_TOKEN_KEY, token)
+}
+
+export function clearAccessToken() {
+  localStorage.removeItem(ACCESS_TOKEN_KEY)
+}
+
+function headers(auth: boolean, tokenOverride?: string | null) {
+  const result = new Headers({ Accept: 'application/json', 'Content-Type': 'application/json' })
+  const token = auth ? (tokenOverride === undefined ? getAccessToken() : tokenOverride) : null
+  if (token) result.set('Authorization', `Bearer ${token}`)
+  return result
+}
+
+function unwrap<T>(payload: unknown): T {
+  if (typeof payload === 'object' && payload !== null && 'code' in payload && 'msg' in payload) {
+    const response = payload as ApiResponse<T>
+    if (response.code !== 200) throw new Error(response.msg || '请求失败')
+    return response.data
   }
-  return fallback
+  return payload as T
 }
 
-/** 统一请求：成功时解析 { code, msg, data } 并返回 data；失败按 HTTP 状态抛错。 */
-export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const controller = new AbortController()
-  const timeout = window.setTimeout(() => controller.abort(), env.requestTimeout)
-  const headers = new Headers(options.headers)
+export async function request<T>(path: string, options: RequestOptions = {}) {
+  const response = await fetch(`${env.apiBaseUrl}${path}`, {
+    method: options.method ?? 'GET',
+    headers: headers(options.auth !== false, options.token),
+    body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    credentials: path.startsWith('/v1/auth/') ? 'include' : 'same-origin',
+  })
+  const payload: unknown = await response.json()
+  if (!response.ok) throw new Error((payload as { msg?: string }).msg || `请求失败 (${response.status})`)
+  return unwrap<T>(payload)
+}
 
-  headers.set('Accept', 'application/json')
-  if (options.body !== undefined && !options.formData) headers.set('Content-Type', 'application/json')
-  if (options.token) headers.set('Authorization', `Bearer ${options.token}`)
-
-  try {
-    const response = await fetch(`${env.apiBaseUrl}${path}`, {
-      ...options,
-      headers,
-      body: options.formData ?? (options.body === undefined ? undefined : JSON.stringify(options.body)),
-      signal: controller.signal,
-    })
-    const isJson = response.headers.get('content-type')?.includes('application/json')
-    const payload: unknown = isJson ? await response.json() : await response.text()
-
-    if (!response.ok) {
-      throw new Error(failMsg(payload, `请求失败 (${response.status})`))
-    }
-
-    if (isApiEnvelope(payload)) {
-      if (payload.code !== 200) {
-        throw new Error(payload.msg || `请求失败 (${payload.code})`)
-      }
-      return payload.data as T
-    }
-
-    return payload as T
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') {
-      throw new Error('请求超时，请稍后重试')
-    }
-    throw error
-  } finally {
-    window.clearTimeout(timeout)
-  }
+export async function upload<T>(path: string, file: File) {
+  const form = new FormData()
+  form.set('file', file)
+  const token = getAccessToken()
+  const response = await fetch(`${env.apiBaseUrl}${path}`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    body: form,
+  })
+  const payload: unknown = await response.json()
+  if (!response.ok) throw new Error((payload as { msg?: string }).msg || `请求失败 (${response.status})`)
+  return unwrap<T>(payload)
 }

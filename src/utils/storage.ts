@@ -1,5 +1,3 @@
-import { env } from '@/config/env'
-
 const isAbsoluteURL = (url: string) =>
   url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')
 

@@ -1,8 +1,13 @@
-export type EmailCodePurpose = 'register' | 'login'
+export type EmailCodePurpose = 'register' | 'login' | 'forgot_password'
 
 export interface SendEmailCodeRequest {
   email: string
   purpose: EmailCodePurpose
+}
+
+export interface LoginRequest {
+  username: string
+  password: string
 }
 
 export interface EmailLoginRequest {
@@ -17,6 +22,13 @@ export interface RegisterRequest {
   code: string
 }
 
+export interface ForgotPasswordRequest {
+  email: string
+  code: string
+  new_password: string
+  confirm_password: string
+}
+
 export interface AuthUser {
   id: number
   username: string
@@ -27,7 +39,7 @@ export interface AuthUser {
   age: number
   role: string
   status: string
-  authVersion: number
+  auth_version: number
 }
 
 export interface AuthResponse {

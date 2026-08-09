@@ -17,4 +17,4 @@ export function usePathname() {
   }, [])
 
   return pathname
-}
+}

@@ -1,11 +1,11 @@
 export interface Article {
-  id: string
+  id: number
   title: string
   summary: string
   content: string
   coverImage: string
-  authorID: string
-  categoryID: string
+  authorID: number
+  categoryID: number
   isTop: boolean
   viewCount: number
   likeCount: number
@@ -21,23 +21,30 @@ export interface ListArticlesRequest {
   pageSize?: number
 }
 
+export interface ListByCategoryRequest extends ListArticlesRequest {
+  categoryID: number
+}
+
+export interface SearchArticlesRequest extends ListArticlesRequest {
+  q: string
+}
+
 export interface ListArticlesResponse {
   articles: Article[]
 }
 
 export interface CreateArticleRequest {
-  authorID: number
   title: string
   summary?: string
   content: string
   coverImage?: string
   categoryID: number
   isTop?: boolean
+  /** 由服务端�?token 注入，无需传�?*/
+  authorID?: number
 }
 
-export interface ListMyArticlesRequest extends ListArticlesRequest {
-  authorID: number
-}
+export interface ListMyArticlesRequest extends ListArticlesRequest {}
 
 export interface GetArticleRequest {
   id: number
@@ -49,7 +56,8 @@ export interface GetArticleResponse {
 
 export interface DeleteArticleRequest {
   id: number
-  authorID: number
+  /** 由服务端�?token 注入，无需传�?*/
+  authorID?: number
 }
 
 export interface ArticleBoolResponse {

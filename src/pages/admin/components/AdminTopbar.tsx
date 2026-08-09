@@ -26,9 +26,9 @@ export default function AdminTopbar({ tab }: Props) {
           <b>{username}</b>
         </div>
         <button type="button" className="admin-logout" onClick={logout}>
-          退出登录
+          退出登�?
         </button>
       </div>
     </header>
   )
-}
+}
