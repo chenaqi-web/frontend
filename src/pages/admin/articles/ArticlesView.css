@@ -2,3 +2,4 @@
 .article-meta .article-views{display:inline-flex;align-items:baseline;gap:4px;color:#766b63}.article-meta .article-views b{color:#3f3832;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
 .article-meta .article-views{display:inline;color:#aaa19a;gap:0}.article-meta .article-views b{color:inherit;font-size:inherit;font-weight:inherit}.article-meta .article-views b::after{content:' ';white-space:pre}
 .article-meta .article-views{flex-direction:row-reverse;gap:4px}.article-meta .article-views b::after{content:none}
+.article-row{cursor:pointer}.article-row:focus-visible{outline:3px solid rgba(213,179,168,.45);outline-offset:2px}
