@@ -10,3 +10,5 @@
 .subtype-card .type-card-main{padding:19px}
 .subtype-card .type-card-meta{color:#a0978f;font-size:11px}
 .subtype-item,.subtype-index,.subtype-path{display:none}
+.subtype-total{margin-left:10px;color:#a49a92;font:400 11px ui-sans-serif,system-ui,sans-serif}
+.subtype-line{display:none}

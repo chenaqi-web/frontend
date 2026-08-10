@@ -49,9 +49,10 @@ export async function request<T>(path: string, options: RequestOptions = {}) {
   return unwrap<T>(payload)
 }
 
-export async function upload<T>(path: string, file: File) {
+export async function upload<T>(path: string, file: File, fields: Record<string, string> = {}) {
   const form = new FormData()
   form.set('file', file)
+  Object.entries(fields).forEach(([key, value]) => form.set(key, value))
   const token = getAccessToken()
   const response = await fetch(`${env.apiBaseUrl}${path}`, {
     method: 'POST',

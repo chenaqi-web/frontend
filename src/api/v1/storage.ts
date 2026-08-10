@@ -4,8 +4,16 @@ import type { DeleteUploadRequest, UploadResponse } from '@/types/storage'
 const auth = (token?: string) => (token ? { token } : {})
 
 export const storageApi = {
-  upload(file: File) {
-    return upload<UploadResponse>('/v1/storage/upload', file)
+  uploadAvatar(file: File) {
+    return upload<UploadResponse>('/v1/storage/avatar', file)
+  },
+
+  uploadCover(file: File) {
+    return upload<UploadResponse>('/v1/storage/cover', file)
+  },
+
+  uploadContent(file: File) {
+    return upload<UploadResponse>('/v1/storage/content', file)
   },
 
   delete(payload: DeleteUploadRequest, token?: string) {
