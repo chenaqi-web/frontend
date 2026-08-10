@@ -109,3 +109,8 @@
 .front-article-body .token-function{color:#059669;font-weight:600}
 .front-article-body .markdown-body{color:#1f2937}
 .front-article-body pre{color:#111827}
+.front-article-grid{position:relative;transition:opacity .16s ease}
+.front-article-grid.is-refreshing{opacity:.62;pointer-events:none}
+.front-article-grid.is-refreshing::after{position:absolute;z-index:2;top:0;left:0;width:34%;height:3px;border-radius:3px;background:#62aee1;content:'';animation:blog-list-refresh .85s ease-in-out infinite alternate}
+@keyframes blog-list-refresh{from{transform:translateX(0);opacity:.55}to{transform:translateX(190%);opacity:1}}
+@media(prefers-reduced-motion:reduce){.front-article-grid{transition:none}.front-article-grid.is-refreshing::after{animation:none}}

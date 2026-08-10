@@ -38,56 +38,76 @@ function appendHighlightedCode(target: HTMLElement, value: string) {
   if (cursor < value.length) target.append(document.createTextNode(value.slice(cursor)))
 }
 
+function renderCodeBlocks(html: string) {
+  const template = document.createElement('template')
+  template.innerHTML = html
+
+  template.content.querySelectorAll('pre').forEach((pre) => {
+    const code = pre.querySelector('code')
+    if (!code) return
+
+    pre.dataset.language = (code.className.match(/language-([\w-]+)/)?.[1] ?? 'code').toUpperCase()
+    const source = code.textContent?.replace(/\n$/, '') ?? ''
+    code.textContent = ''
+    code.classList.add('code-with-lines')
+
+    source.split('\n').forEach((line, index) => {
+      const row = document.createElement('span')
+      row.className = 'code-line'
+      const lineNumber = document.createElement('span')
+      lineNumber.className = 'code-line-number'
+      lineNumber.textContent = String(index + 1)
+      const lineContent = document.createElement('span')
+      lineContent.className = 'code-line-content'
+      appendHighlightedCode(lineContent, line)
+      row.append(lineNumber, lineContent)
+      code.append(row)
+    })
+
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.className = 'code-copy'
+    button.textContent = 'Copy'
+    button.setAttribute('aria-label', 'Copy code')
+    pre.append(button)
+  })
+
+  return template.innerHTML
+}
+
 export default function MarkdownView({ content, className }: Props) {
   const rootRef = useRef<HTMLDivElement>(null)
   const html = useMemo(() => {
     if (!content) return ''
-    return DOMPurify.sanitize(marked.parse(resolveMarkdownImages(content)) as string)
+    const raw = marked.parse(resolveMarkdownImages(content)) as string
+    return renderCodeBlocks(DOMPurify.sanitize(raw))
   }, [content])
 
   useEffect(() => {
     const root = rootRef.current
     if (!root) return
 
-    root.querySelectorAll('pre').forEach((pre) => {
-      if (pre.querySelector('.code-copy')) return
-      const code = pre.querySelector('code')
-      pre.dataset.language = (code?.className.match(/language-([\w-]+)/)?.[1] ?? 'code').toUpperCase()
-      if (code) {
-        const source = code.textContent?.replace(/\n$/, '') ?? ''
-        code.textContent = ''
-        code.classList.add('code-with-lines')
-        source.split('\n').forEach((line, index) => {
-          const row = document.createElement('span')
-          row.className = 'code-line'
-          const lineNumber = document.createElement('span')
-          lineNumber.className = 'code-line-number'
-          lineNumber.textContent = String(index + 1)
-          const lineContent = document.createElement('span')
-          lineContent.className = 'code-line-content'
-          appendHighlightedCode(lineContent, line)
-          row.append(lineNumber, lineContent)
-          code.append(row)
-        })
-      }
+    const handleCopy = async (event: MouseEvent) => {
+      const target = event.target as Element | null
+      const button = target?.closest<HTMLButtonElement>('.code-copy')
+      if (!button || !root.contains(button)) return
 
-      const button = document.createElement('button')
-      button.type = 'button'
-      button.className = 'code-copy'
-      button.textContent = 'Copy'
-      button.setAttribute('aria-label', 'Copy code')
-      button.addEventListener('click', async () => {
-        try {
-          await navigator.clipboard.writeText(code?.textContent ?? '')
-          button.textContent = 'Copied'
-        } catch {
-          button.textContent = 'Failed'
-        }
-        window.setTimeout(() => { button.textContent = 'Copy' }, 1400)
-      })
-      pre.appendChild(button)
-    })
-  }, [html])
+      const code = button.parentElement?.querySelector('code')
+      const codeText = Array.from(code?.querySelectorAll('.code-line-content') ?? [])
+        .map((line) => line.textContent ?? '')
+        .join('\n')
+      try {
+        await navigator.clipboard.writeText(codeText)
+        button.textContent = 'Copied'
+      } catch {
+        button.textContent = 'Failed'
+      }
+      window.setTimeout(() => { button.textContent = 'Copy' }, 1400)
+    }
+
+    root.addEventListener('click', handleCopy)
+    return () => root.removeEventListener('click', handleCopy)
+  }, [])
 
   return <div ref={rootRef} className={className ?? 'markdown-body'} dangerouslySetInnerHTML={{ __html: html }} />
 }
