@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import AppLink from '@/components/common/AppLink'
 import { routes } from '@/router/routes'
 import { resolveStorageUrl } from '@/utils/storage'
@@ -20,6 +20,8 @@ function NavIcon({ name }: { name: IconName }) {
 const navIcons: Record<string, IconName> = { '/': 'home', '/diary': 'diary', '/blog': 'blog', '/assistant': 'assistant', '/about': 'about' }
 
 export default function SiteLayout({ children, pathname }: { children: ReactNode; pathname: string }) {
+  const isHome = pathname === '/'
+  const [hasScrolled, setHasScrolled] = useState(false)
   const currentUser = JSON.parse(localStorage.getItem('renai_current_user') ?? '{}') as CurrentUser
   const loggedIn = Boolean(localStorage.getItem('renai_access_token'))
   const isActive = (path: string) => pathname === path || (path !== '/' && pathname.startsWith(`${path}/`))
@@ -27,5 +29,24 @@ export default function SiteLayout({ children, pathname }: { children: ReactNode
   const initial = (currentUser.username || 'U').slice(0, 1).toUpperCase()
   const logout = () => { localStorage.removeItem('renai_access_token'); localStorage.removeItem('renai_current_user'); window.location.href = '/login' }
 
-  return <div className="site-shell"><header className="site-header"><AppLink className="brand" to="/"><strong>Renai</strong><small>TEAM</small></AppLink><nav>{routes.filter((item) => item.showInNav).map((item) => <AppLink key={item.path} className={isActive(item.path) ? 'active' : ''} to={item.path}><NavIcon name={navIcons[item.path] ?? 'home'} /><span>{item.label}</span></AppLink>)}</nav><div className="auth-actions">{loggedIn ? <div className="nav-account"><AppLink className="nav-avatar" to="/admin" aria-label="进入管理后台">{avatar ? <img src={avatar} alt="" /> : initial}</AppLink><div className="nav-account-popover" role="menu"><div className="nav-account-identity"><strong>{currentUser.username || 'Renai 用户'}</strong><span>个人账户</span></div><div className="nav-account-actions"><AppLink role="menuitem" to="/admin/profile">个人中心 <b aria-hidden="true">›</b></AppLink><AppLink role="menuitem" to="/admin/my-articles">文章管理 <b aria-hidden="true">›</b></AppLink><AppLink role="menuitem" to="/admin">管理后台 <b aria-hidden="true">›</b></AppLink></div><button role="menuitem" type="button" onClick={logout}>退出登录 <b aria-hidden="true">↪</b></button></div></div> : <><AppLink to="/login">登录</AppLink><AppLink to="/register">注册</AppLink></>}</div></header>{children}<footer className="site-footer"><b>RenaiTeam</b><span>Made with care.</span></footer></div>
+  useEffect(() => {
+    if (!isHome) {
+      setHasScrolled(false)
+      return
+    }
+    const updateHeader = () => setHasScrolled(window.scrollY > 32)
+    updateHeader()
+    window.addEventListener('scroll', updateHeader, { passive: true })
+    return () => window.removeEventListener('scroll', updateHeader)
+  }, [isHome])
+
+  return <div className={`site-shell${isHome ? ' site-shell-home' : ''}`}>
+    <header className={`site-header${isHome ? ' site-header-home' : ''}${hasScrolled ? ' is-scrolled' : ''}`}>
+      <AppLink className="brand" to="/"><strong>Renai</strong><small>TEAM</small></AppLink>
+      <nav>{routes.filter((item) => item.showInNav).map((item) => <AppLink key={item.path} className={isActive(item.path) ? 'active' : ''} to={item.path}><NavIcon name={navIcons[item.path] ?? 'home'} /><span>{item.label}</span></AppLink>)}</nav>
+      <div className="auth-actions">{loggedIn ? <div className="nav-account"><AppLink className="nav-avatar" to="/admin" aria-label="进入管理后台">{avatar ? <img src={avatar} alt="" /> : initial}</AppLink><div className="nav-account-popover" role="menu"><div className="nav-account-identity"><strong>{currentUser.username || 'Renai 用户'}</strong><span>个人账户</span></div><div className="nav-account-actions"><AppLink role="menuitem" to="/admin/profile">个人中心 <b aria-hidden="true">→</b></AppLink><AppLink role="menuitem" to="/admin/my-articles">文章管理 <b aria-hidden="true">→</b></AppLink><AppLink role="menuitem" to="/admin">管理后台 <b aria-hidden="true">→</b></AppLink></div><button role="menuitem" type="button" onClick={logout}>退出登录 <b aria-hidden="true">→</b></button></div></div> : <><AppLink to="/login">登录</AppLink><AppLink to="/register">注册</AppLink></>}</div>
+    </header>
+    {children}
+    <footer className="site-footer"><b>RenaiTeam</b><span>Made with care.</span></footer>
+  </div>
 }

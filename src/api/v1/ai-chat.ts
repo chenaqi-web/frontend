@@ -24,9 +24,13 @@ export const aiChatApi = {
     return request<AiChatSession[]>(`/v1/ai-chat/sessions${toQuery(params)}`, { method: 'GET' })
   },
 
-  getSession(id: string) {
-    return request<AiChatSession>(`/v1/ai-chat/session/${encodeURIComponent(id)}`, { method: 'GET' })
-  },
+	getSession(id: string) {
+		return request<AiChatSession>(`/v1/ai-chat/session/${encodeURIComponent(id)}`, { method: 'GET' })
+	},
+
+	deleteSession(id: string) {
+		return request<void>(`/v1/ai-chat/session/${encodeURIComponent(id)}`, { method: 'DELETE' })
+	},
 
   listMessages(id: string) {
     return request<AiChatMessage[]>(`/v1/ai-chat/session/${encodeURIComponent(id)}/messages`, { method: 'GET' })
