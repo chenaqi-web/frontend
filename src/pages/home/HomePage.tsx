@@ -3,7 +3,7 @@ import type { FormEvent } from 'react'
 import AppLink from '@/components/common/AppLink'
 
 const slides = [
-  { image: '/carousel/1.jpg', title: '宇宙并非局部真实，那么一切皆无意义', label: 'RENai TEAM' },
+  { image: '/carousel/1.jpg', title: '宇宙并非局部真实，这意味着一切皆无所谓', label: 'RENai TEAM' },
   { image: '/carousel/2.jpg', title: '世界偶尔匆忙，我在这里慢慢生活', label: '把日常，过成甜甜的收藏' },
 ]
 const topics = ['生活', '创作', '社团', '灵感', '阅读', 'AI']
@@ -14,7 +14,7 @@ export default function HomePage() {
 
   useEffect(() => {
     if (slides.length < 2) return
-    const timer = window.setInterval(() => setActiveSlide((current) => (current + 1) % slides.length), 5500)
+    const timer = window.setInterval(() => setActiveSlide((current) => (current + 1) % slides.length), 5000)
     return () => window.clearInterval(timer)
   }, [])
 
@@ -28,7 +28,7 @@ export default function HomePage() {
       <img className="home-cosmic-hero-image" src={slide.image} alt="瑞克和莫迪的宇宙场景" />
       <div className="home-cosmic-shade" />
       <div className="home-cosmic-content">
-        <small>{slide.label}</small><h1>{slide.title}</h1><p>在无垠的宇宙里，收集日常、灵感与那些值得被记住的片刻。</p>
+        <small>{slide.label}</small><h1>{slide.title}</h1>
         <form className="home-search" onSubmit={search}><span>文章</span><input value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder="搜索社团的记录与灵感" aria-label="搜索文章" /><button type="submit" aria-label="搜索"><i /></button></form>
         <div className="home-topic-list">{topics.map((topic) => <button type="button" key={topic} onClick={() => { setKeyword(topic); window.location.href = `/blog?keyword=${encodeURIComponent(topic)}` }}>{topic}</button>)}</div>
       </div>

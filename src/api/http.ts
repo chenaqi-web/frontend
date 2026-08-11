@@ -44,6 +44,7 @@ export async function request<T>(path: string, options: RequestOptions = {}) {
     body: options.body === undefined ? undefined : JSON.stringify(options.body),
     credentials: path.startsWith('/v1/auth/') ? 'include' : 'same-origin',
   })
+  if (response.status === 204) return undefined as T
   const payload: unknown = await response.json()
   if (!response.ok) throw new Error((payload as { msg?: string }).msg || `请求失败 (${response.status})`)
   return unwrap<T>(payload)
