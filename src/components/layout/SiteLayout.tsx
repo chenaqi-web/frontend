@@ -48,6 +48,10 @@ export default function SiteLayout({ children, pathname }: { children: ReactNode
       <div className="auth-actions">{loggedIn ? <div className="nav-account"><AppLink className="nav-avatar" to="/admin" aria-label="进入管理后台">{avatar ? <img src={avatar} alt="" /> : initial}</AppLink><div className="nav-account-popover" role="menu"><div className="nav-account-identity"><strong>{currentUser.username || 'Renai 用户'}</strong><span>个人账户</span></div><div className="nav-account-actions"><AppLink role="menuitem" to="/admin/profile">个人中心 <b aria-hidden="true">→</b></AppLink><AppLink role="menuitem" to="/admin/my-articles">文章管理 <b aria-hidden="true">→</b></AppLink><AppLink role="menuitem" to="/admin">管理后台 <b aria-hidden="true">→</b></AppLink></div><button role="menuitem" type="button" onClick={logout}>退出登录 <b aria-hidden="true">→</b></button></div></div> : <><AppLink to="/login">登录</AppLink><AppLink to="/register">注册</AppLink></>}</div>
     </header>
     {children}
-    {!hideFooter && <footer className="site-footer"><b>RenaiTeam</b><span>Made with care.</span></footer>}
+    {!hideFooter && <footer className="site-footer">
+      <div className="site-footer-brand"><b>RenaiTeam</b><p>一个记录社团生活、创作和灵感的交流空间。<br />在这里，分享值得被认真看见。</p><a className="site-footer-record" href="https://beian.miit.gov.cn/" target="_blank" rel="noreferrer">浙ICP备2025156531号-1</a></div>
+      <nav className="site-footer-links" aria-label="快速导航"><strong>快速导航</strong><AppLink to="/">首页</AppLink><AppLink to="/blog">知识专栏</AppLink><AppLink to="/diary">生活小记</AppLink><AppLink to="/about">关于我们</AppLink></nav>
+      <div className="site-footer-support"><strong>支持</strong><AppLink to="/assistant">站内助手</AppLink></div>
+    </footer>}
   </div>
 }
