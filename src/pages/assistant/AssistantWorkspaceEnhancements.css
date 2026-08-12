@@ -10,4 +10,11 @@
 .sidebar-collapsed .assistant-new-chat-label{display:none}
 .assistant-composer{margin-bottom:52px}
 .assistant-composer textarea{resize:none;overflow-y:auto}
+.assistant-session>button.assistant-session-select{display:grid;width:34px;height:39px;min-width:34px;flex:0 0 34px;place-items:center;padding:0;border:0;background:transparent;color:#86bfe2;cursor:pointer;text-align:center}
+.assistant-session>.assistant-session-title{min-width:0;flex:1;padding:10px 4px 10px 0;border:0;background:transparent;color:#617286;cursor:text;text-align:left}
+.assistant-session-title b{display:block;overflow:hidden;font-size:13px;font-weight:500;text-overflow:ellipsis;white-space:nowrap}
+.assistant-session.active .assistant-session-title b{color:#227fb9;font-weight:700}
+.assistant-session-title:hover b{text-decoration:underline;text-underline-offset:3px}
+.assistant-session-title-input{min-width:0;height:32px;flex:1;margin:3px 4px 3px 0;padding:0 8px;border:1px solid #65bbed;border-radius:6px;outline:0;background:#fff;color:#233a50;font:13px inherit}
+.assistant-session-title-input:focus{box-shadow:0 0 0 3px rgba(101,187,237,.18)}
 @media(max-width:760px){.assistant-sidebar-toggle{display:none}.assistant-workspace.sidebar-collapsed{grid-template-columns:1fr}.assistant-composer{margin-bottom:28px}}

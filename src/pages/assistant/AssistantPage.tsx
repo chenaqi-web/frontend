@@ -174,7 +174,12 @@ export default function AssistantPage() {
 
   const renameSession = async (sessionID: string) => {
     const title = sessionTitleDraft.trim()
+    const currentTitle = sessions.find((session) => session.session_id === sessionID)?.title.trim()
     if (!title || renamingSessionID) return
+    if (title === currentTitle) {
+      cancelRenameSession()
+      return
+    }
     try {
       setRenamingSessionID(sessionID)
       setNotice('')
@@ -252,9 +257,8 @@ export default function AssistantPage() {
           {!loading && sessions.length === 0 && <span className="assistant-side-status">{loggedIn ? '还没有会话' : '登录后保存会话'}</span>}
           {sessions.map((session) => <div className={`assistant-session${session.session_id === activeSessionID ? ' active' : ''}`} key={session.session_id}>
             {editingSessionID === session.session_id
-              ? <input className="assistant-session-title-input" value={sessionTitleDraft} maxLength={256} autoFocus disabled={renamingSessionID === session.session_id} onClick={(event) => event.stopPropagation()} onChange={(event) => setSessionTitleDraft(event.target.value)} onBlur={cancelRenameSession} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); void renameSession(session.session_id) } if (event.key === 'Escape') cancelRenameSession() }} aria-label="会话名称" />
-              : <button type="button" onClick={() => void selectSession(session.session_id)}><span>◌</span><b>{session.title || '新建会话'}</b></button>}
-            <button className="assistant-rename-session" type="button" title="修改会话名称" aria-label="修改会话名称" disabled={Boolean(deletingSessionID) || Boolean(renamingSessionID)} onClick={(event) => startRenameSession(event, session)}>✎</button>
+              ? <input className="assistant-session-title-input" value={sessionTitleDraft} maxLength={256} autoFocus disabled={renamingSessionID === session.session_id} onClick={(event) => event.stopPropagation()} onChange={(event) => setSessionTitleDraft(event.target.value)} onBlur={() => void renameSession(session.session_id)} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); event.currentTarget.blur() } if (event.key === 'Escape') cancelRenameSession() }} aria-label="会话名称" />
+              : <><button className="assistant-session-select" type="button" onClick={() => void selectSession(session.session_id)} aria-label={`打开会话：${session.title || '新建会话'}`}><span>◌</span></button><button className="assistant-session-title" type="button" title="点击修改会话名称" disabled={Boolean(deletingSessionID) || Boolean(renamingSessionID)} onClick={(event) => startRenameSession(event, session)}><b>{session.title || '新建会话'}</b></button></>}
             <button className="assistant-delete-session" type="button" title="删除会话" aria-label="删除会话" disabled={Boolean(deletingSessionID) || Boolean(renamingSessionID)} onClick={(event) => handleDeleteSession(event, session.session_id)}>×</button>
           </div>)}
         </div>
