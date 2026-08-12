@@ -5,6 +5,7 @@ export interface CommentItem {
   parentId: number
   rootId: number
   replyToId: number
+  replyToUserName: string
   content: string
   likeCount: number
   childCount: number

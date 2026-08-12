@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { likeApi } from '@/api/v1/like'
 import type { Article } from '@/types/article'
+import { logRequestError } from '@/utils/request-error'
 
 const formatCount = (value: number) => new Intl.NumberFormat('zh-CN').format(value ?? 0)
 
@@ -15,7 +16,8 @@ export default function LikesView() {
       const result = await likeApi.list({ objectType: 'article', page: 1, pageSize: 100 })
       setArticles(result.articles ?? [])
     } catch (error) {
-      setMessage((error as Error).message)
+      logRequestError('加载点赞列表失败', error)
+      setMessage('加载失败，请稍后重试')
     } finally {
       setLoading(false)
     }

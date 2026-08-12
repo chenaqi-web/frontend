@@ -21,6 +21,7 @@ const navIcons: Record<string, IconName> = { '/': 'home', '/diary': 'diary', '/b
 
 export default function SiteLayout({ children, pathname }: { children: ReactNode; pathname: string }) {
   const isHome = pathname === '/'
+  const hideFooter = pathname === '/assistant'
   const [hasScrolled, setHasScrolled] = useState(false)
   const currentUser = JSON.parse(localStorage.getItem('renai_current_user') ?? '{}') as CurrentUser
   const loggedIn = Boolean(localStorage.getItem('renai_access_token'))
@@ -47,6 +48,6 @@ export default function SiteLayout({ children, pathname }: { children: ReactNode
       <div className="auth-actions">{loggedIn ? <div className="nav-account"><AppLink className="nav-avatar" to="/admin" aria-label="进入管理后台">{avatar ? <img src={avatar} alt="" /> : initial}</AppLink><div className="nav-account-popover" role="menu"><div className="nav-account-identity"><strong>{currentUser.username || 'Renai 用户'}</strong><span>个人账户</span></div><div className="nav-account-actions"><AppLink role="menuitem" to="/admin/profile">个人中心 <b aria-hidden="true">→</b></AppLink><AppLink role="menuitem" to="/admin/my-articles">文章管理 <b aria-hidden="true">→</b></AppLink><AppLink role="menuitem" to="/admin">管理后台 <b aria-hidden="true">→</b></AppLink></div><button role="menuitem" type="button" onClick={logout}>退出登录 <b aria-hidden="true">→</b></button></div></div> : <><AppLink to="/login">登录</AppLink><AppLink to="/register">注册</AppLink></>}</div>
     </header>
     {children}
-    <footer className="site-footer"><b>RenaiTeam</b><span>Made with care.</span></footer>
+    {!hideFooter && <footer className="site-footer"><b>RenaiTeam</b><span>Made with care.</span></footer>}
   </div>
 }

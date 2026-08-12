@@ -5,6 +5,7 @@ import { storageApi } from '@/api/v1/storage'
 import MarkdownView from '@/components/common/MarkdownView'
 import type { Category, CategoryType } from '@/types/category'
 import type { UploadResponse } from '@/types/storage'
+import { logRequestError } from '@/utils/request-error'
 import './CreateArticleView.css'
 
 type Point = { x: number; y: number }
@@ -41,7 +42,7 @@ export default function CreateArticleView() {
     void categoryApi.listTypes().then(async ({ types }) => {
       const groups = await Promise.all(types.map((item) => categoryApi.listCategories({ parentID: item.id })))
       setCategoryGroups(types.map((type, index) => ({ type, categories: groups[index].categories ?? [] })))
-    }).catch((error: Error) => setNotice(error.message))
+    }).catch((error: unknown) => { logRequestError('加载文章分类失败', error); setNotice('加载分类失败，请稍后重试') })
   }, [])
 
   useEffect(() => () => { if (cropUrl) URL.revokeObjectURL(cropUrl) }, [cropUrl])
@@ -134,7 +135,7 @@ export default function CreateArticleView() {
       setCover(await storageApi.uploadCover(new File([blob], name, { type: 'image/jpeg' })))
       setNotice('封面已上传')
       closeCrop()
-    } catch (error) { setNotice((error as Error).message) } finally { setBusy('') }
+    } catch (error) { logRequestError('上传封面失败', error); setNotice('上传封面失败，请稍后重试') } finally { setBusy('') }
   }
 
   const uploadContentImage = async (file?: File) => {
@@ -148,7 +149,7 @@ export default function CreateArticleView() {
       setContent((current) => current.slice(0, start) + markdown + current.slice(start))
       setContentImages((current) => [...current, result])
       setNotice('图片已插入正文')
-    } catch (error) { setNotice((error as Error).message) } finally { setBusy('') }
+    } catch (error) { logRequestError('上传正文图片失败', error); setNotice('上传图片失败，请稍后重试') } finally { setBusy('') }
   }
 
   const removeContentImage = async (image: UploadResponse) => {
@@ -157,7 +158,7 @@ export default function CreateArticleView() {
       setContent((current) => current.replace(new RegExp(`!?\\[[^\\]]*\\]\\(${image.url.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}\\)\\n?`, 'g'), ''))
       setContentImages((current) => current.filter((item) => item.key !== image.key))
       setNotice('正文图片已删除')
-    } catch (error) { setNotice((error as Error).message) }
+    } catch (error) { logRequestError('删除正文图片失败', error); setNotice('删除图片失败，请稍后重试') }
   }
 
   const publish = async () => {
@@ -168,7 +169,7 @@ export default function CreateArticleView() {
       if (!result.success) throw new Error('文章发布失败')
       setTitle(''); setSummary(''); setContent(''); setCategoryID(0); setCategoryTypeID(0); setCover(null); setContentImages([])
       setNotice('文章已发布')
-    } catch (error) { setNotice((error as Error).message) } finally { setBusy('') }
+    } catch (error) { logRequestError('发布文章失败', error); setNotice('发布失败，请稍后重试') } finally { setBusy('') }
   }
 
   const jumpToHeading = (index: number) => {

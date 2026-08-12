@@ -1,13 +1,21 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { aiChatApi } from '@/api/v1/ai-chat'
+import { aiSettingsApi } from '@/api/v1/ai-settings'
+import { vectorApi } from '@/api/v1/vector'
 import { navigate } from '@/hooks/usePathname'
+import { ACCESS_TOKEN_KEY, CURRENT_USER_KEY } from '@/constants/auth'
+import { logRequestError } from '@/utils/request-error'
 import type { AiChatMessage, AiChatSession, AiChatStreamChunk } from '@/types/ai-chat'
+import type { VectorCollection } from '@/types/vector'
+import KnowledgePicker from './KnowledgePicker'
 import './AssistantPage.css'
 import './AssistantDeleteModal.css'
 import './AssistantWorkspaceEnhancements.css'
 import './AssistantComposerCard.css'
+import './AssistantKnowledge.css'
 
 type ChatMessage = AiChatMessage & { localID: string }
+const COLLECTION_STORAGE_KEY = 'renai_ai_collection'
 
 const suggestions = ['社团最近有什么活动？', '帮我推荐一篇适合新成员的文章', '如何参与社团的内容创作？']
 
@@ -25,10 +33,35 @@ export default function AssistantPage() {
   const [notice, setNotice] = useState('')
   const [pendingDeleteSessionID, setPendingDeleteSessionID] = useState<string | null>(null)
   const [deletingSessionID, setDeletingSessionID] = useState('')
+  const [editingSessionID, setEditingSessionID] = useState('')
+  const [sessionTitleDraft, setSessionTitleDraft] = useState('')
+  const [renamingSessionID, setRenamingSessionID] = useState('')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [assistantEnabled, setAssistantEnabled] = useState(true)
+  const [collections, setCollections] = useState<VectorCollection[]>([])
+  const [collectionName, setCollectionName] = useState('')
+  const [loginRequired, setLoginRequired] = useState(() => !localStorage.getItem(ACCESS_TOKEN_KEY))
   const messageEnd = useRef<HTMLDivElement>(null)
-  const loggedIn = Boolean(localStorage.getItem('renai_access_token'))
+  const loggedIn = !loginRequired
   const isEmpty = !loading && messages.length === 0
+
+  const requireLogin = () => {
+    setLoginRequired(true)
+    setNotice('')
+  }
+
+  const handleRequestError = (error: unknown) => {
+    const message = (error as Error).message || ''
+    logRequestError('站内助手请求失败', error)
+    if (/invalid or expired token|unauthorized|authentication required/i.test(message)) {
+      localStorage.removeItem(ACCESS_TOKEN_KEY)
+      localStorage.removeItem(CURRENT_USER_KEY)
+      setLoginRequired(true)
+      setNotice('')
+      return
+    }
+    setNotice('操作未完成，请稍后重试')
+  }
 
   const loadMessages = async (sessionID: string) => {
     const result = await aiChatApi.listMessages(sessionID)
@@ -42,7 +75,7 @@ export default function AssistantPage() {
     try {
       await loadMessages(sessionID)
     } catch (error) {
-      setNotice((error as Error).message)
+      handleRequestError(error)
     }
   }
 
@@ -57,22 +90,33 @@ export default function AssistantPage() {
   useEffect(() => {
     if (!loggedIn) {
       setLoading(false)
-      return
+    } else {
+      let cancelled = false
+      void aiChatApi.listSessions()
+        .then(async (result) => {
+          if (cancelled) return
+          setSessions(result)
+          if (result[0]) {
+            setActiveSessionID(result[0].session_id)
+            const history = await aiChatApi.listMessages(result[0].session_id)
+            if (!cancelled) setMessages(history.map(toLocalMessage))
+          }
+        })
+        .catch((error: Error) => !cancelled && handleRequestError(error))
+        .finally(() => !cancelled && setLoading(false))
+      return () => { cancelled = true }
     }
-    let cancelled = false
-    void aiChatApi.listSessions({ page: 1, page_size: 30 })
-      .then(async (result) => {
-        if (cancelled) return
-        setSessions(result)
-        if (result[0]) {
-          setActiveSessionID(result[0].session_id)
-          const history = await aiChatApi.listMessages(result[0].session_id)
-          if (!cancelled) setMessages(history.map(toLocalMessage))
-        }
-      })
-      .catch((error: Error) => !cancelled && setNotice(error.message))
-      .finally(() => !cancelled && setLoading(false))
-    return () => { cancelled = true }
+  }, [loggedIn])
+
+  useEffect(() => {
+    void Promise.all([aiSettingsApi.status(), vectorApi.collections()]).then(([settings, list]) => {
+      setAssistantEnabled(settings.assistantEnabled)
+      setCollections(list)
+      const saved = localStorage.getItem(COLLECTION_STORAGE_KEY) || ''
+      const selected = list.some((collection) => collection.name === saved) ? saved : list[0]?.name || ''
+      setCollectionName(selected)
+      if (selected) localStorage.setItem(COLLECTION_STORAGE_KEY, selected)
+    }).catch((error: Error) => handleRequestError(error))
   }, [loggedIn])
 
   useEffect(() => {
@@ -81,11 +125,12 @@ export default function AssistantPage() {
 
   const handleNewSession = async () => {
     if (sending) return
+    if (!loggedIn) { requireLogin(); return }
     try {
       setNotice('')
       await createSession()
     } catch (error) {
-      setNotice((error as Error).message)
+      handleRequestError(error)
     }
   }
 
@@ -104,7 +149,7 @@ export default function AssistantPage() {
       }
       setPendingDeleteSessionID(null)
     } catch (error) {
-      setNotice((error as Error).message)
+      handleRequestError(error)
     } finally {
       setDeletingSessionID('')
     }
@@ -115,9 +160,38 @@ export default function AssistantPage() {
     if (!sending && !deletingSessionID) setPendingDeleteSessionID(sessionID)
   }
 
+  const startRenameSession = (event: MouseEvent<HTMLButtonElement>, session: AiChatSession) => {
+    event.stopPropagation()
+    if (sending || deletingSessionID || renamingSessionID) return
+    setEditingSessionID(session.session_id)
+    setSessionTitleDraft(session.title || '新建会话')
+  }
+
+  const cancelRenameSession = () => {
+    setEditingSessionID('')
+    setSessionTitleDraft('')
+  }
+
+  const renameSession = async (sessionID: string) => {
+    const title = sessionTitleDraft.trim()
+    if (!title || renamingSessionID) return
+    try {
+      setRenamingSessionID(sessionID)
+      setNotice('')
+      const session = await aiChatApi.updateSession(sessionID, title)
+      setSessions((current) => current.map((item) => item.session_id === sessionID ? session : item))
+      cancelRenameSession()
+    } catch (error) {
+      handleRequestError(error)
+    } finally {
+      setRenamingSessionID('')
+    }
+  }
+
   const send = async (text = draft) => {
     const content = text.trim()
-    if (!content || sending) return
+    if (!content || sending || !assistantEnabled || !collectionName) return
+    if (!loggedIn) { requireLogin(); return }
     let sessionID = activeSessionID
     try {
       setNotice('')
@@ -131,7 +205,7 @@ export default function AssistantPage() {
       ])
       setDraft('')
 
-      const response = await aiChatApi.chat({ session_id: sessionID, content })
+      const response = await aiChatApi.chat({ session_id: sessionID, content, collection_name: collectionName })
       const reader = response.body?.getReader()
       if (!reader) throw new Error('浏览器不支持流式响应')
       const decoder = new TextDecoder()
@@ -158,39 +232,36 @@ export default function AssistantPage() {
         blocks.forEach(consume)
         if (done) break
       }
-      setSessions((current) => current.map((session) => session.session_id === sessionID ? { ...session, title: content.slice(0, 24) } : session))
     } catch (error) {
-      setNotice((error as Error).message)
+      handleRequestError(error)
       setMessages((current) => current.filter((item) => !item.localID.startsWith('assistant-') || item.content))
     } finally {
       setSending(false)
     }
   }
 
-  if (!loggedIn) {
-    return <main className="assistant-page"><section className="assistant-signin"><span>REN AI</span><h1>社团助手</h1><p>登录后可保存你的会话，并基于社团知识库连续对话。</p><button type="button" onClick={() => navigate('/login')}>登录后开始聊天</button></section></main>
-  }
-
   return <main className="assistant-page">
-    <section className={`assistant-workspace${sidebarCollapsed ? ' sidebar-collapsed' : ''}`} aria-label="社团助手对话">
+    <section className={`assistant-workspace${sidebarCollapsed ? ' sidebar-collapsed' : ''}`} aria-label="站内助手对话">
       <aside className="assistant-sidebar">
-        <div className="assistant-side-brand"><span>R</span><div><strong>社团助手</strong><small>知识库已连接</small></div></div>
+        <div className="assistant-side-brand"><span>R</span><div><strong>站内助手</strong><small>{collectionName ? `当前：${collectionName}` : '未选择知识库'}</small></div></div>
         <button className="assistant-sidebar-toggle" type="button" aria-label={sidebarCollapsed ? '展开会话栏' : '收起会话栏'} title={sidebarCollapsed ? '展开会话栏' : '收起会话栏'} onClick={() => setSidebarCollapsed((current) => !current)}>{sidebarCollapsed ? '›' : '‹'}</button>
         <button className="assistant-new-chat" type="button" onClick={() => void handleNewSession()} disabled={sending}><span aria-hidden="true">+</span><span className="assistant-new-chat-label">新建对话</span></button>
         <div className="assistant-session-label">最近会话</div>
         <div className="assistant-session-list">
           {loading && <span className="assistant-side-status">正在加载...</span>}
-          {!loading && sessions.length === 0 && <span className="assistant-side-status">还没有会话</span>}
+          {!loading && sessions.length === 0 && <span className="assistant-side-status">{loggedIn ? '还没有会话' : '登录后保存会话'}</span>}
           {sessions.map((session) => <div className={`assistant-session${session.session_id === activeSessionID ? ' active' : ''}`} key={session.session_id}>
-            <button type="button" onClick={() => void selectSession(session.session_id)}><span>◌</span><b>{session.title || '新建会话'}</b></button>
-            <button className="assistant-delete-session" type="button" title="删除会话" aria-label="删除会话" disabled={Boolean(deletingSessionID)} onClick={(event) => handleDeleteSession(event, session.session_id)}>×</button>
+            {editingSessionID === session.session_id
+              ? <input className="assistant-session-title-input" value={sessionTitleDraft} maxLength={256} autoFocus disabled={renamingSessionID === session.session_id} onClick={(event) => event.stopPropagation()} onChange={(event) => setSessionTitleDraft(event.target.value)} onBlur={cancelRenameSession} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); void renameSession(session.session_id) } if (event.key === 'Escape') cancelRenameSession() }} aria-label="会话名称" />
+              : <button type="button" onClick={() => void selectSession(session.session_id)}><span>◌</span><b>{session.title || '新建会话'}</b></button>}
+            <button className="assistant-rename-session" type="button" title="修改会话名称" aria-label="修改会话名称" disabled={Boolean(deletingSessionID) || Boolean(renamingSessionID)} onClick={(event) => startRenameSession(event, session)}>✎</button>
+            <button className="assistant-delete-session" type="button" title="删除会话" aria-label="删除会话" disabled={Boolean(deletingSessionID) || Boolean(renamingSessionID)} onClick={(event) => handleDeleteSession(event, session.session_id)}>×</button>
           </div>)}
         </div>
         <div className="assistant-side-foot"><i /> AI 回复仅供参考</div>
       </aside>
 
       <section className={`assistant-chat-panel${isEmpty ? ' is-empty' : ''}`}>
-        <header className="assistant-chat-head"><div><span>REN AI ASSISTANT</span><h1>{sessions.find((session) => session.session_id === activeSessionID)?.title || '开始一段新对话'}</h1></div><div className="assistant-online"><i /> 在线</div></header>
         <div className="assistant-message-list">
           {isEmpty && <div className="assistant-welcome"><h2>从一个问题开始</h2><p>查找社团内容、了解活动安排，或一起整理创作思路。</p><div>{suggestions.map((item) => <button type="button" key={item} disabled={sending} onClick={() => void send(item)}>{item}</button>)}</div></div>}
           {messages.map((message) => <article className={`assistant-message ${message.role === 'user' ? 'user' : 'bot'}`} key={message.localID}>
@@ -199,8 +270,10 @@ export default function AssistantPage() {
           </article>)}
           <div ref={messageEnd} />
         </div>
-        {notice && <div className="assistant-notice" role="status">{notice}</div>}
-        <form className="assistant-composer" onSubmit={(event) => { event.preventDefault(); void send() }}><textarea value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void send() } }} placeholder="给社团助手发送消息" disabled={sending} rows={1} /><div className="assistant-composer-bottom"><div className="assistant-composer-tools"><span>社团知识库</span><small>Enter 发送，Shift + Enter 换行</small></div><button type="submit" disabled={sending || !draft.trim()} aria-label="发送消息">↑</button></div></form>
+        {!loggedIn && <div className="assistant-notice assistant-login-notice" role="status"><span>需要登录后才能使用站内助手</span><button type="button" onClick={() => navigate('/login')}>去登录</button></div>}
+        {notice && loggedIn && <div className="assistant-notice" role="status"><span>{notice}</span></div>}
+        {!assistantEnabled && <div className="assistant-notice" role="status">站内助手已由管理员关闭，暂时无法发送消息。</div>}
+        <form className="assistant-composer" onSubmit={(event) => { event.preventDefault(); void send() }}><textarea value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void send() } }} placeholder={assistantEnabled ? '给站内助手发送消息' : '站内助手已关闭'} disabled={sending || !assistantEnabled} rows={1} /><div className="assistant-composer-bottom"><div className="assistant-composer-tools"><KnowledgePicker collections={collections} value={collectionName} disabled={sending || collections.length === 0} onChange={(value) => { setCollectionName(value); localStorage.setItem(COLLECTION_STORAGE_KEY, value) }} /><small>当前对话检索：{collectionName || '未选择'}</small></div><button className="assistant-send-button" type="submit" disabled={sending || !assistantEnabled || !collectionName || !draft.trim()} aria-label="发送消息"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6.5 10.5 12 5l5.5 5.5" /></svg></button></div></form>
       </section>
       {pendingDeleteSessionID && <div className="assistant-delete-modal" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !deletingSessionID) setPendingDeleteSessionID(null) }}><section className="assistant-delete-card" role="dialog" aria-modal="true" aria-labelledby="assistant-delete-title"><div className="assistant-delete-icon">!</div><h2 id="assistant-delete-title">删除这个会话？</h2><p>会话中的全部聊天记录将被永久删除，无法恢复。</p><div><button type="button" disabled={Boolean(deletingSessionID)} onClick={() => setPendingDeleteSessionID(null)}>取消</button><button className="assistant-delete-confirm" type="button" disabled={Boolean(deletingSessionID)} onClick={() => void deleteSession(pendingDeleteSessionID)}>{deletingSessionID ? '删除中...' : '删除会话'}</button></div></section></div>}
     </section>

@@ -3,6 +3,7 @@ import AppLink from '@/components/common/AppLink'
 import { authApi } from '@/api/v1/auth'
 import type { EmailCodePurpose } from '@/types/auth'
 import { navigate } from '@/hooks/usePathname'
+import { logRequestError } from '@/utils/request-error'
 import './login.css'
 
 type Mode = 'password' | 'email'
@@ -17,7 +18,7 @@ export default function LoginPage() {
     if (!email.trim()) { setMessage('请输入邮箱'); return }
     setSending(true)
     try { await authApi.sendEmailCode({ email, purpose }); setMessage('验证码已发送，请查收邮箱') }
-    catch (error) { setMessage(error instanceof Error ? error.message : '验证码发送失败') }
+    catch (error) { logRequestError('发送登录验证码失败', error); setMessage('验证码发送失败，请稍后重试') }
     finally { setSending(false) }
   }
 
@@ -41,8 +42,8 @@ export default function LoginPage() {
         ? await authApi.login({ username: String(data.get('username')), password: String(data.get('password')) })
         : await authApi.emailLogin({ email: String(data.get('email')), code: String(data.get('code')) })
       localStorage.setItem('renai_current_user', JSON.stringify(result.user))
-      setMessage('登录成功'); window.setTimeout(() => navigate('/admin'), 300)
-    } catch (error) { setMessage(error instanceof Error ? error.message : '登录失败，请稍后重试') }
+      setMessage('登录成功'); window.setTimeout(() => navigate('/'), 300)
+    } catch (error) { logRequestError('登录失败', error); setMessage('登录失败，请稍后重试') }
   }
 
   return <main className="auth-page"><section className="auth-card login-card">

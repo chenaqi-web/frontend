@@ -10,14 +10,10 @@ export interface AiChatMessage {
   created_at: string
 }
 
-export interface AiChatListSessionsQuery {
-  page?: number
-  page_size?: number
-}
-
 export interface AiChatChatRequest {
   session_id: string
   content: string
+  collection_name: string
 }
 
 export interface AiChatStreamChunk {
@@ -26,4 +22,4 @@ export interface AiChatStreamChunk {
   done: boolean
   knowledge?: string[]
   error?: string
-}
+}

@@ -8,6 +8,7 @@ import { navigate } from '@/hooks/usePathname'
 import type { Article } from '@/types/article'
 import type { CommentItem } from '@/types/comment'
 import { resolveStorageUrl } from '@/utils/storage'
+import { logRequestError } from '@/utils/request-error'
 import './BlogPage.css'
 
 const formatDateTime = (value: string | number) => {
@@ -59,7 +60,8 @@ export default function BlogDetailPage() {
       const result = await commentApi.list({ articleId: articleID, page: 1, size: 50 })
       setComments(result.comments ?? [])
     } catch (reason) {
-      setMessage((reason as Error).message)
+      logRequestError('加载文章评论失败', reason)
+      setMessage('加载评论失败，请稍后重试')
     } finally {
       setCommentsLoading(false)
     }
@@ -72,7 +74,7 @@ export default function BlogDetailPage() {
     }
     if (loadedArticleID.current !== articleID) {
       loadedArticleID.current = articleID
-      void articleApi.detail({ id: articleID }).then((result) => setArticle(result.article)).catch((reason: Error) => setMessage(reason.message)).finally(() => setLoading(false))
+      void articleApi.detail({ id: articleID }).then((result) => setArticle(result.article)).catch((reason: unknown) => { logRequestError('加载文章详情失败', reason); setMessage('加载文章失败，请稍后重试') }).finally(() => setLoading(false))
     }
     void loadComments()
     if (loggedIn) {
@@ -98,7 +100,8 @@ export default function BlogDetailPage() {
       setMessage('评论已发布')
       await loadComments()
     } catch (reason) {
-      setMessage((reason as Error).message)
+      logRequestError('发布评论失败', reason)
+      setMessage('评论发布失败，请稍后重试')
     } finally {
       setSubmitting(false)
     }
@@ -115,7 +118,8 @@ export default function BlogDetailPage() {
       const result = await commentApi.replies({ parentId: comment.id, page: 1, size: 50 })
       setReplies((current) => ({ ...current, [comment.id]: result.replies ?? [] }))
     } catch (reason) {
-      setMessage((reason as Error).message)
+      logRequestError('加载评论回复失败', reason)
+      setMessage('加载回复失败，请稍后重试')
     }
   }
 
@@ -131,7 +135,8 @@ export default function BlogDetailPage() {
       setReplyTarget(null)
       await loadComments()
     } catch (reason) {
-      setMessage((reason as Error).message)
+      logRequestError('发布回复失败', reason)
+      setMessage('回复发布失败，请稍后重试')
     } finally {
       setSubmitting(false)
     }
@@ -149,7 +154,8 @@ export default function BlogDetailPage() {
       setArticle({ ...article, likeCount: Math.max(0, article.likeCount + (liked ? -1 : 1)) })
       setLiked(!liked)
     } catch (reason) {
-      setMessage((reason as Error).message)
+      logRequestError('更新文章点赞失败', reason)
+      setMessage('操作失败，请稍后重试')
     } finally {
       setLiking(false)
     }
@@ -172,7 +178,8 @@ export default function BlogDetailPage() {
       setComments((current) => current.map(update))
       setReplies((current) => Object.fromEntries(Object.entries(current).map(([parentID, items]) => [parentID, items.map(update)])))
     } catch (reason) {
-      setMessage((reason as Error).message)
+      logRequestError('更新评论点赞失败', reason)
+      setMessage('操作失败，请稍后重试')
     } finally {
       setLikingCommentIDs((current) => ({ ...current, [comment.id]: false }))
     }
@@ -194,7 +201,7 @@ export default function BlogDetailPage() {
         <header><div><span>一起交流</span><h2>评论</h2></div><strong>{comments.length} 条</strong></header>
         {loggedIn ? <form className="front-comment-form" onSubmit={submitComment}><Avatar src={currentUser.avatar} name={currentUser.username || '我'} /><div><label htmlFor="new-comment">写下你的想法</label><textarea id="new-comment" value={commentText} maxLength={1000} onChange={(event) => setCommentText(event.target.value)} placeholder="友善交流，让讨论更有价值。" /><footer><span>{commentText.length}/1000</span><button type="submit" disabled={submitting || !commentText.trim()}>{submitting ? '发布中...' : '发布评论'}</button></footer></div></form> : <div className="front-comment-login"><span>登录后参与评论，与社团成员继续讨论。</span><button type="button" onClick={() => navigate('/login')}>去登录</button></div>}
         {message && <p className="front-comment-message" role="status">{message}</p>}
-        {commentsLoading ? <div className="front-comments-state">正在加载评论...</div> : comments.length === 0 ? <div className="front-comments-state"><strong>还没有评论</strong><span>成为第一个参与讨论的人。</span></div> : <div className="front-comment-list">{comments.map((comment) => <article className="front-comment" key={comment.id}><Avatar src={comment.userAvatar} name={comment.userName || 'R'} /><div><header><strong>{comment.userName || 'Renai 成员'}</strong><time>{formatDateTime(comment.createdAt)}</time></header><p>{comment.content}</p><div className="front-comment-actions"><button type="button" className={`front-comment-like${comment.isLiked ? ' liked' : ''}`} disabled={likingCommentIDs[comment.id]} onClick={() => void toggleCommentLike(comment)} aria-label={comment.isLiked ? '取消点赞评论' : '点赞评论'} title={comment.isLiked ? '取消点赞' : '点赞'}><ActionIcon name="like" /><span>{comment.likeCount}</span></button><button type="button" onClick={() => loggedIn ? setReplyTarget(comment) : navigate('/login')}>回复</button>{comment.childCount > 0 && <button type="button" onClick={() => void toggleReplies(comment)}>{expandedReplies[comment.id] ? '收起回复' : `查看 ${comment.childCount} 条回复`}</button>}</div>{expandedReplies[comment.id] && <div className="front-replies">{replies[comment.id] ? replies[comment.id].map((reply) => <article key={reply.id}><Avatar src={reply.userAvatar} name={reply.userName || 'R'} small /><div><header><strong>{reply.userName || 'Renai 成员'}</strong><time>{formatDateTime(reply.createdAt)}</time></header><p>{reply.content}</p><div className="front-comment-actions front-reply-actions"><button type="button" className={`front-comment-like${reply.isLiked ? ' liked' : ''}`} disabled={likingCommentIDs[reply.id]} onClick={() => void toggleCommentLike(reply)} aria-label={reply.isLiked ? '取消点赞评论' : '点赞评论'} title={reply.isLiked ? '取消点赞' : '点赞'}><ActionIcon name="like" /><span>{reply.likeCount}</span></button><button type="button" onClick={() => loggedIn ? setReplyTarget(reply) : navigate('/login')}>回复</button></div></div></article>) : <span>正在加载回复...</span>}</div>}</div></article>)}</div>}
+        {commentsLoading ? <div className="front-comments-state">正在加载评论...</div> : comments.length === 0 ? <div className="front-comments-state"><strong>还没有评论</strong><span>成为第一个参与讨论的人。</span></div> : <div className="front-comment-list">{comments.map((comment) => <article className="front-comment" key={comment.id}><Avatar src={comment.userAvatar} name={comment.userName || 'R'} /><div><header><strong>{comment.userName || 'Renai 成员'}</strong><time>{formatDateTime(comment.createdAt)}</time></header><p>{comment.content}</p><div className="front-comment-actions"><button type="button" className={`front-comment-like${comment.isLiked ? ' liked' : ''}`} disabled={likingCommentIDs[comment.id]} onClick={() => void toggleCommentLike(comment)} aria-label={comment.isLiked ? '取消点赞评论' : '点赞评论'} title={comment.isLiked ? '取消点赞' : '点赞'}><ActionIcon name="like" /><span>{comment.likeCount}</span></button><button type="button" onClick={() => loggedIn ? setReplyTarget(comment) : navigate('/login')}>回复</button>{comment.childCount > 0 && <button type="button" onClick={() => void toggleReplies(comment)}>{expandedReplies[comment.id] ? '收起回复' : `查看 ${comment.childCount} 条回复`}</button>}</div>{expandedReplies[comment.id] && <div className="front-replies">{replies[comment.id] ? replies[comment.id].map((reply) => <article key={reply.id}><Avatar src={reply.userAvatar} name={reply.userName || 'R'} small /><div><header><strong>{reply.userName || 'Renai 成员'}</strong><time>{formatDateTime(reply.createdAt)}</time></header><p>{reply.replyToUserName && <span className="front-reply-to">回复 @{reply.replyToUserName}：</span>}{reply.content}</p><div className="front-comment-actions front-reply-actions"><button type="button" className={`front-comment-like${reply.isLiked ? ' liked' : ''}`} disabled={likingCommentIDs[reply.id]} onClick={() => void toggleCommentLike(reply)} aria-label={reply.isLiked ? '取消点赞评论' : '点赞评论'} title={reply.isLiked ? '取消点赞' : '点赞'}><ActionIcon name="like" /><span>{reply.likeCount}</span></button><button type="button" onClick={() => loggedIn ? setReplyTarget(reply) : navigate('/login')}>回复</button></div></div></article>) : <span>正在加载回复...</span>}</div>}</div></article>)}</div>}
       </section>
     </article>
     <aside className="front-detail-aside">

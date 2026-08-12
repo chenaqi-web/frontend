@@ -37,6 +37,16 @@ function unwrap<T>(payload: unknown): T {
   return payload as T
 }
 
+async function parseResponse(response: Response): Promise<unknown> {
+  const content = await response.text()
+  if (!content.trim()) return undefined
+  try {
+    return JSON.parse(content) as unknown
+  } catch {
+    throw new Error(content.trim() || `请求失败 (${response.status})`)
+  }
+}
+
 export async function request<T>(path: string, options: RequestOptions = {}) {
   const response = await fetch(`${env.apiBaseUrl}${path}`, {
     method: options.method ?? 'GET',
@@ -45,7 +55,7 @@ export async function request<T>(path: string, options: RequestOptions = {}) {
     credentials: path.startsWith('/v1/auth/') ? 'include' : 'same-origin',
   })
   if (response.status === 204) return undefined as T
-  const payload: unknown = await response.json()
+  const payload = await parseResponse(response)
   if (!response.ok) throw new Error((payload as { msg?: string }).msg || `请求失败 (${response.status})`)
   return unwrap<T>(payload)
 }
@@ -60,7 +70,7 @@ export async function upload<T>(path: string, file: File, fields: Record<string,
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     body: form,
   })
-  const payload: unknown = await response.json()
+  const payload = await parseResponse(response)
   if (!response.ok) throw new Error((payload as { msg?: string }).msg || `请求失败 (${response.status})`)
   return unwrap<T>(payload)
 }
