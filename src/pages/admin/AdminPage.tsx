@@ -11,6 +11,7 @@ import LikesView from '@/pages/admin/likes/LikesView'
 import ProfileView from '@/pages/admin/profile/ProfileView'
 import SettingsView from '@/pages/admin/settings/SettingsView'
 import KnowledgeView from '@/pages/admin/knowledge/KnowledgeView'
+import UsersView from '@/pages/admin/users/UsersView'
 import { TAB_PATHS, TAB_TITLES, type AdminTab } from '@/pages/admin/types'
 import './AdminPage.css'
 
@@ -73,6 +74,8 @@ export default function AdminPage() {
                         ? <SettingsView />
                         : tab === 'knowledge'
                           ? <KnowledgeView />
+                          : tab === 'users'
+                            ? <UsersView />
                       : <section className="admin-card"><div className="admin-card-head"><div><span className="eyebrow">COMING SOON</span><h2>{TAB_TITLES[tab]}</h2><p>这个工作区正在准备中，后续会接入完整的内容与知识库管理能力。</p></div><button className="primary-button" type="button" onClick={logout}>退出当前账号</button></div></section>}
         </div>
       </section>

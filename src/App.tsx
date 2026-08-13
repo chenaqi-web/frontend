@@ -22,4 +22,4 @@ function App() {
   return <SiteLayout pathname={pathname}>{route.element}</SiteLayout>
 }
 
-export default App
+export default App

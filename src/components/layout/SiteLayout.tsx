@@ -21,7 +21,7 @@ const navIcons: Record<string, IconName> = { '/': 'home', '/diary': 'diary', '/b
 
 export default function SiteLayout({ children, pathname }: { children: ReactNode; pathname: string }) {
   const isHome = pathname === '/'
-  const hideFooter = pathname === '/assistant'
+  const hideFooter = pathname === '/assistant' || pathname === '/diary'
   const [hasScrolled, setHasScrolled] = useState(false)
   const currentUser = JSON.parse(localStorage.getItem('renai_current_user') ?? '{}') as CurrentUser
   const loggedIn = Boolean(localStorage.getItem('renai_access_token'))
@@ -41,7 +41,7 @@ export default function SiteLayout({ children, pathname }: { children: ReactNode
     return () => window.removeEventListener('scroll', updateHeader)
   }, [isHome])
 
-  return <div className={`site-shell${isHome ? ' site-shell-home' : ''}`}>
+  return <div className={`site-shell${isHome ? ' site-shell-home' : ''}${pathname === '/diary' ? ' site-shell-diary' : ''}`}>
     <header className={`site-header${isHome ? ' site-header-home' : ''}${hasScrolled ? ' is-scrolled' : ''}`}>
       <AppLink className="brand" to="/"><strong>Renai</strong><small>TEAM</small></AppLink>
       <nav>{routes.filter((item) => item.showInNav).map((item) => <AppLink key={item.path} className={isActive(item.path) ? 'active' : ''} to={item.path}><NavIcon name={navIcons[item.path] ?? 'home'} /><span>{item.label}</span></AppLink>)}</nav>

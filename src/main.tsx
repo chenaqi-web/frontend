@@ -5,6 +5,7 @@ import './styles/site.css'
 import './styles/site-footer.css'
 import './pages/home/HomePage.css'
 import './pages/assistant/AssistantPage.css'
+import './pages/diary/DiaryPage.css'
 import App from './App.tsx'
 
 createRoot(document.getElementById('root')!).render(

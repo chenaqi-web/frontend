@@ -43,7 +43,11 @@ export default function LoginPage() {
         : await authApi.emailLogin({ email: String(data.get('email')), code: String(data.get('code')) })
       localStorage.setItem('renai_current_user', JSON.stringify(result.user))
       setMessage('登录成功'); window.setTimeout(() => navigate('/'), 300)
-    } catch (error) { logRequestError('登录失败', error); setMessage('登录失败，请稍后重试') }
+    } catch (error) {
+      logRequestError('登录失败', error)
+      const detail = error instanceof Error ? error.message : ''
+      setMessage(detail === 'USER_BLOCKED' ? '该账号已被管理员拉黑，无法登录。' : '登录失败，请稍后重试')
+    }
   }
 
   return <main className="auth-page"><section className="auth-card login-card">
