@@ -5,7 +5,7 @@ import type { CurrentUser } from '@/types/user'
 import { logRequestError } from '@/utils/request-error'
 import './ProfileView.css'
 
-const emptyProfile: CurrentUser = { id: 0, username: '', email: '', phone: '', avatar: '', sex: '', age: 0, role: 'user', status: 'approved', auth_version: 1 }
+const emptyProfile: CurrentUser = { id: 0, username: '', email: '', phone: '', avatar: '', sex: '', age: 0, role: 'user', status: 'approved' }
 const sexOptions = [{ value: '', label: '未设置' }, { value: 'male', label: '男' }, { value: 'female', label: '女' }] as const
 const sexLabel = (value: string) => sexOptions.find((item) => item.value === value)?.label ?? '未设置'
 const saveCurrentUser = (user: CurrentUser) => localStorage.setItem('renai_current_user', JSON.stringify(user))

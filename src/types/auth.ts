@@ -39,7 +39,6 @@ export interface AuthUser {
   age: number
   role: string
   status: string
-  auth_version: number
 }
 
 export interface AuthResponse {

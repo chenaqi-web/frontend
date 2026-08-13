@@ -1,0 +1,16 @@
+services:
+  frontend:
+    build:
+      context: ../..
+      dockerfile: deploy/Dockerfile
+    image: renai-frontend:prod
+    container_name: renai-frontend
+    ports:
+      - "80:80"
+    networks:
+      - chenaqi-net
+    restart: unless-stopped
+
+networks:
+  chenaqi-net:
+    external: true
