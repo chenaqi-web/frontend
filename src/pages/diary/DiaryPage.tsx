@@ -58,10 +58,13 @@ export default function DiaryPage() {
     const file = detailProvince && provinceFiles[detailProvince]
     const mapData = (file ? provinceModules[`../../../node_modules/china-geojson/src/geojson/${file}_geo.json`] : chinaMap) as { features: { properties: { name: string; id?: string } }[] }
     echarts.registerMap(mapName, mapData as never)
-    chart.setOption({ tooltip: { show: false }, series: [{ type: 'map', map: mapName, roam: true, selectedMode: 'single', layoutCenter: ['50%', '50%'], layoutSize: '64%', label: { show: Boolean(detailProvince), color: '#4e6874', fontSize: 11 }, itemStyle: { borderColor: '#fff', borderWidth: 2 }, emphasis: { label: { show: true, color: '#315260', fontSize: 12, fontWeight: 700 }, itemStyle: { areaColor: '#ffb0c9', shadowBlur: 14, shadowColor: 'rgba(231, 119, 159, .45)' } }, data: mapData.features.map((feature, index) => ({ name: feature.properties.name, itemStyle: { areaColor: palette[index % palette.length] } })) }] })
-    const refresh = () => { requestAnimationFrame(updateConnectionPoints) }
-    chart.on('finished', refresh)
-    chart.on('georoam', refresh)
+    chart.setOption({ tooltip: { show: false }, series: [{ type: 'map', map: mapName, roam: true, selectedMode: 'single', layoutCenter: ['50%', '52%'], layoutSize: detailProvince ? '76%' : '46%', label: { show: Boolean(detailProvince), color: '#4e6874', fontSize: 11 }, itemStyle: { borderColor: '#fff', borderWidth: 2 }, emphasis: { label: { show: true, color: '#315260', fontSize: 12, fontWeight: 700 }, itemStyle: { areaColor: '#ffb0c9', shadowBlur: 14, shadowColor: 'rgba(231, 119, 159, .45)' } }, data: mapData.features.map((feature, index) => ({ name: feature.properties.name, itemStyle: { areaColor: palette[index % palette.length] } })) }] })
+    const updatePoints = () => { requestAnimationFrame(updateConnectionPoints) }
+    const resize = () => { chart.resize(); updatePoints() }
+    const resizeObserver = new ResizeObserver(resize)
+    resizeObserver.observe(mapRef.current)
+    chart.on('finished', updatePoints)
+    chart.on('georoam', updatePoints)
     chart.on('click', (params) => {
       if (detailProvince) return
       const id = mapData.features[params.dataIndex]?.properties.id
@@ -78,8 +81,8 @@ export default function DiaryPage() {
       const moment = moments.find((item) => item.province === province)
       if (moment) setSelected(moment)
     })
-    window.addEventListener('resize', refresh)
-    return () => { window.removeEventListener('resize', refresh); chart.dispose(); chartRef.current = null }
+    window.addEventListener('resize', resize)
+    return () => { resizeObserver.disconnect(); window.removeEventListener('resize', resize); chart.dispose(); chartRef.current = null }
   }, [detailProvince, updateConnectionPoints])
 
   useEffect(() => { const id = requestAnimationFrame(updateConnectionPoints); return () => cancelAnimationFrame(id) }, [updateConnectionPoints])

@@ -1,5 +1,5 @@
 import { request } from '@/api/http'
-import type { CurrentUser, ManagedUser, UserListResponse } from '@/types/user'
+import type { CurrentUser, UserListResponse } from '@/types/user'
 
 export interface UpdateProfilePayload {
   username: string
@@ -31,7 +31,7 @@ export const userApi = {
     return request<UserListResponse>(`/v1/user/list?${query.toString()}`)
   },
 
-  updateStatus(userID: number, status: ManagedUser['status']) {
-    return request<ManagedUser>(`/v1/user/${userID}/status`, { method: 'PUT', body: { status } })
+  updateBlacklist(userID: number, blacklisted: boolean) {
+    return request<{ success: boolean }>('/v1/user/status', { method: 'PUT', body: { user_id: userID, blacklisted } })
   },
 }
