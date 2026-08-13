@@ -5,7 +5,11 @@ import { navigate } from '@/hooks/usePathname'
 const icons: Record<string, string> = { '个人中心': '◎', '工作台': '⌂', '内容创作': '✎', '互动反馈': '♡', '系统管理': '⚙' }
 
 export default function AdminSidebar({ tab, role, onChange }: { tab: AdminTab; role: string; onChange: (tab: AdminTab) => void }) {
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({ '内容创作': true, '系统管理': true })
+  const [expanded, setExpanded] = useState<Record<string, boolean>>((): Record<string, boolean> => (
+    window.matchMedia('(min-width: 901px)').matches
+      ? { '内容创作': true, '系统管理': true }
+      : {}
+  ))
   const selectTab = (nextTab: AdminTab) => { onChange(nextTab); navigate(TAB_PATHS[nextTab]) }
   return (
     <aside className="admin-sidebar">
