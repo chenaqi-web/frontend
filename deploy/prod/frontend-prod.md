@@ -1,19 +1,26 @@
 # Frontend 生产部署
 
-本文使用 Docker Compose 部署前端。容器内的 Nginx 提供前端页面，并把 `/api/` 请求转发到同一 Docker 网络中的 Gateway。
+本文使用 Docker Compose 部署前端和独立 Nginx。前端容器提供静态页面；外层 Nginx 负责 `80/443`、SSL 证书及 `/api/`、`/static/` 到 Gateway 的反向代理。
 
-访问域名：`http://chena7.cm`
+访问域名：`http://chena7.cn`
 
 ## 1. 前置条件
 
-- 域名 `chena7.cm` 和 `www.chena7.cn` 的 A 记录已指向服务器公网 IP。
-- 云安全组和服务器防火墙已放行 TCP `80`。
+- 域名 `chena7.cn` 和 `www.chena7.cn` 的 A 记录已指向服务器公网 IP。
+- 云安全组和服务器防火墙已放行 TCP `80`、`443`。
 - Gateway 容器名称为 `gateway`，且已经加入 `chenaqi-net` 网络。
+- SSL 证书位于 `/home/docker/chenaqiweb/nginx/ssl/fullchain.pem` 和 `/home/docker/chenaqiweb/nginx/ssl/privkey.pem`。
 
 检查 Gateway 网络：
 
 ```bash
 docker inspect gateway --format '{{json .NetworkSettings.Networks}}'
+```
+
+若 Gateway 已经运行但不在该网络中，将它加入网络：
+
+```bash
+docker network connect chenaqi-net gateway
 ```
 
 若还未创建网络，执行：
@@ -46,7 +53,7 @@ docker compose -f deploy/prod/docker-compose.yml logs -f frontend
 浏览器访问：
 
 ```text
-http://chena7.cm
+https://chena7.cn
 ```
 
 ## 3. 请求转发
@@ -54,8 +61,9 @@ http://chena7.cm
 容器内 Nginx 的规则如下：
 
 ```text
-http://chena7.cm/        -> 前端静态页面
-http://chena7.cm/api/... -> gateway:8079/api/...
+https://chena7.cn/        -> nginx -> frontend:80
+https://chena7.cn/api/... -> nginx -> gateway:8079/api/...
+https://chena7.cn/static/... -> nginx -> gateway:8079/static/...
 ```
 
 因此前端生产环境保持 `VITE_API_BASE_URL=/api` 即可，不需要写服务器 IP 或 Gateway 的公网地址。
@@ -89,8 +97,12 @@ docker logs -f renai-frontend
 docker exec renai-frontend wget -S -O - http://gateway:8079/health
 ```
 
-若 `chena7.cm` 无法访问，先确认 DNS 已生效、端口 `80` 未被其他 Nginx 或容器占用，并检查服务器安全组规则。
+若 `chena7.cn` 无法访问，先确认 DNS 已生效、端口 `80` 未被其他 Nginx 或容器占用，并检查服务器安全组规则。
 
 ## 6. HTTPS
 
-当前配置只提供 HTTP。启用 HTTPS 前，需放行 TCP `443` 并为 `chena7.cm` 申请证书；随后在 Nginx 中增加 `443 ssl` 配置，并将 HTTP 请求重定向到 HTTPS。
+HTTP 会自动跳转到 HTTPS。续期证书后，重载 Nginx：
+
+```bash
+docker exec nginx nginx -s reload
+```
