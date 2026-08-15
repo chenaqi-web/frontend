@@ -13,6 +13,12 @@ type ImageSize = { width: number; height: number }
 
 const COVER_RATIO = 16 / 9
 
+function ArticlePreview({ content }: { content: string }) {
+  return <section className="front-article-body editor-preview" aria-label="文章预览">
+    <MarkdownView content={content || '*预览内容会显示在这里*'} />
+  </section>
+}
+
 export default function CreateArticleView() {
   const [title, setTitle] = useState('')
   const [summary, setSummary] = useState('')
@@ -195,7 +201,7 @@ export default function CreateArticleView() {
       <main className="editor-canvas">
         <div className="editor-title-row"><div><span>NEW ARTICLE</span><h2>创建文章</h2></div><div className="editor-status"><i />未发布</div></div>
         <label className="editor-field"><span>文章标题</span><input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="输入一个清晰的标题" maxLength={120} /></label>
-        <div className="markdown-editor"><div className="editor-toolbar"><div className="mode-switch"><button type="button" className={editorMode === 'edit' ? 'active' : ''} onClick={() => setEditorMode('edit')}>编辑</button><button type="button" className={editorMode === 'preview' ? 'active' : ''} onClick={() => setEditorMode('preview')}>预览</button><button type="button" className={editorMode === 'split' ? 'active' : ''} onClick={() => setEditorMode('split')}>分栏</button></div><label className="image-insert"><input type="file" accept="image/jpeg,image/png,image/gif,image/webp,image/avif" onChange={(event) => { void uploadContentImage(event.target.files?.[0]); event.currentTarget.value = '' }} disabled={busy !== ''} />{busy === 'content' ? '上传中...' : '插入图片'}</label></div>{editorMode === 'preview' ? <MarkdownView content={content || '*预览内容会显示在这里*'} className="editor-preview markdown-body" /> : editorMode === 'split' ? <div className="editor-split"><textarea ref={editorRef} className="markdown-input" value={content} onChange={(event) => setContent(event.target.value)} placeholder="从这里开始写作..." /><MarkdownView content={content || '*预览内容会显示在这里*'} className="editor-preview markdown-body" /></div> : <textarea ref={editorRef} className="markdown-input" value={content} onChange={(event) => setContent(event.target.value)} placeholder={'从这里开始写作...\n\n## 第一个章节\n\n支持 Markdown，也可以通过右上角插入图片。'} />}</div>
+        <div className="markdown-editor"><div className="editor-toolbar"><div className="mode-switch"><button type="button" className={editorMode === 'edit' ? 'active' : ''} onClick={() => setEditorMode('edit')}>编辑</button><button type="button" className={editorMode === 'preview' ? 'active' : ''} onClick={() => setEditorMode('preview')}>预览</button><button type="button" className={editorMode === 'split' ? 'active' : ''} onClick={() => setEditorMode('split')}>分栏</button></div><label className="image-insert"><input type="file" accept="image/jpeg,image/png,image/gif,image/webp,image/avif" onChange={(event) => { void uploadContentImage(event.target.files?.[0]); event.currentTarget.value = '' }} disabled={busy !== ''} />{busy === 'content' ? '上传中...' : '插入图片'}</label></div>{editorMode === 'preview' ? <ArticlePreview content={content} /> : editorMode === 'split' ? <div className="editor-split"><textarea ref={editorRef} className="markdown-input" value={content} onChange={(event) => setContent(event.target.value)} placeholder="从这里开始写作..." /><ArticlePreview content={content} /></div> : <textarea ref={editorRef} className="markdown-input" value={content} onChange={(event) => setContent(event.target.value)} placeholder={'从这里开始写作...\n\n## 第一个章节\n\n支持 Markdown，也可以通过右上角插入图片。'} />}</div>
         <section className="article-details" aria-label="文章发布信息">
           <div className="details-intro"><span>ARTICLE DETAILS</span><h3>补充发布信息</h3><p>完成正文后，再选择分类、补充摘要和封面。</p></div>
           <div className="details-form">
