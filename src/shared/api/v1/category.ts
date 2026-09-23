@@ -1,4 +1,4 @@
-import { request } from '@/api/http'
+import { request } from '@/shared/api/http'
 import type {
   CategoryBoolResponse,
   CreateCategoryRequest,
@@ -8,7 +8,7 @@ import type {
   ListCategoriesRequest,
   ListCategoriesResponse,
   ListTypesResponse,
-} from '@/types/category'
+} from '@/shared/types/category'
 
 const auth = (token?: string) => (token ? { token } : {})
 

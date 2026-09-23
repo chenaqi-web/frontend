@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { likeApi } from '@/api/v1/like'
-import type { Article } from '@/types/article'
-import { logRequestError } from '@/utils/request-error'
+import { likeApi } from '@/shared/api/v1/like'
+import type { Article } from '@/shared/types/article'
+import { logRequestError } from '@/shared/lib/request-error'
 
 const formatCount = (value: number) => new Intl.NumberFormat('zh-CN').format(value ?? 0)
 

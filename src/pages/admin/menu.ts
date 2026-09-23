@@ -1,7 +1,5 @@
 export type AdminTab = 'profile' | 'create' | 'myArticles' | 'likes' | 'dashboard' | 'articles' | 'categories' | 'users' | 'knowledge' | 'settings'
 
-export interface AdminArticle { id: string | number; title: string; authorName?: string; categoryID?: number; viewCount?: number; createdAt?: number }
-
 export const TAB_PATHS: Record<AdminTab, string> = { profile: '/admin/profile', create: '/admin/create', myArticles: '/admin/my-articles', likes: '/admin/likes', dashboard: '/admin', articles: '/admin/blog', categories: '/admin/categories', users: '/admin/users', knowledge: '/admin/knowledge', settings: '/admin/settings' }
 export const TAB_TITLES: Record<AdminTab, string> = { profile: '个人信息', create: '创建文章', myArticles: '我的文章', likes: '点赞列表', dashboard: '工作台', articles: '文章管理', categories: '分类管理', users: '用户管理', knowledge: '知识库管理', settings: '系统设置' }
 

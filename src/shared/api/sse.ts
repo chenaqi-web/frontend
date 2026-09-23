@@ -1,5 +1,5 @@
-import { env } from '@/config/env'
-import { getAccessToken } from '@/api/http'
+import { env } from '@/shared/config/env'
+import { getAccessToken } from '@/shared/api/http'
 
 export async function requestStream(path: string, body: unknown) {
   const token = getAccessToken()

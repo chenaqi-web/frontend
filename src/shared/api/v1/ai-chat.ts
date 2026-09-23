@@ -1,10 +1,10 @@
-import { request } from '@/api/http'
-import { requestStream } from '@/api/sse'
+import { request } from '@/shared/api/http'
+import { requestStream } from '@/shared/api/sse'
 import type {
   AiChatChatRequest,
   AiChatMessage,
   AiChatSession,
-} from '@/types/ai-chat'
+} from '@/shared/types/ai-chat'
 
 export const aiChatApi = {
   createSession() {

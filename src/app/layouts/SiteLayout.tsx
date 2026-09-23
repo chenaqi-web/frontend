@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import AppLink from '@/components/common/AppLink'
-import { routes } from '@/router/routes'
-import { resolveStorageUrl } from '@/utils/storage'
+import AppLink from '@/shared/ui/AppLink'
+import { routes } from '@/app/routes'
+import { resolveStorageUrl } from '@/shared/lib/storage'
 
 type CurrentUser = { username?: string; avatar?: string }
 type IconName = 'home' | 'diary' | 'blog' | 'assistant' | 'about'

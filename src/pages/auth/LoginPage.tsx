@@ -1,10 +1,10 @@
 import { useState, type FormEvent } from 'react'
-import AppLink from '@/components/common/AppLink'
-import { authApi } from '@/api/v1/auth'
-import type { EmailCodePurpose } from '@/types/auth'
-import { navigate } from '@/hooks/usePathname'
-import { logRequestError } from '@/utils/request-error'
-import './login.css'
+import AppLink from '@/shared/ui/AppLink'
+import { authApi } from '@/shared/api/v1/auth'
+import type { EmailCodePurpose } from '@/shared/types/auth'
+import { navigate } from '@/shared/hooks/usePathname'
+import { logRequestError } from '@/shared/lib/request-error'
+import './auth-form.css'
 
 type Mode = 'password' | 'email'
 

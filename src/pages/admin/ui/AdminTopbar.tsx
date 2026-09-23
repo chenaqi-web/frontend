@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { CURRENT_USER_KEY } from '@/constants/auth'
-import { navigate } from '@/hooks/usePathname'
-import { TAB_TITLES, type AdminTab } from '@/pages/admin/types'
-import { resolveStorageUrl } from '@/utils/storage'
+import { CURRENT_USER_KEY } from '@/shared/config/auth'
+import { navigate } from '@/shared/hooks/usePathname'
+import { TAB_TITLES, type AdminTab } from '@/pages/admin/menu'
+import { resolveStorageUrl } from '@/shared/lib/storage'
 
 type TopbarUser = { username?: string; role?: string; avatar?: string }
 

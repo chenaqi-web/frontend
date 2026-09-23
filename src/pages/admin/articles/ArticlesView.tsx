@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { articleApi } from '@/api/v1/article'
-import { navigate } from '@/hooks/usePathname'
-import type { Article } from '@/types/article'
-import { logRequestError } from '@/utils/request-error'
+import { articleApi } from '@/shared/api/v1/article'
+import { navigate } from '@/shared/hooks/usePathname'
+import type { Article } from '@/shared/types/article'
+import { logRequestError } from '@/shared/lib/request-error'
 import './ArticlesView.css'
 
 const formatCount = (value: number) => new Intl.NumberFormat('zh-CN').format(value ?? 0)

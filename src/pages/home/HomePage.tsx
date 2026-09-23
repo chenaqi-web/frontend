@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import AppLink from '@/components/common/AppLink'
+import AppLink from '@/shared/ui/AppLink'
 
 const slides = [
   { image: '/carousel/1.jpg', title: '宇宙并非局部真实，这意味着一切皆无所谓', label: 'RENai TEAM' },

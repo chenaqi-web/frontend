@@ -1,5 +1,5 @@
-import { request } from '@/api/http'
-import type { LikeBoolResponse, LikeRequest, UserLikeListRequest, UserLikeListResponse } from '@/types/like'
+import { request } from '@/shared/api/http'
+import type { LikeBoolResponse, LikeRequest, UserLikeListRequest, UserLikeListResponse } from '@/shared/types/like'
 
 const auth = (token?: string) => (token ? { token } : {})
 

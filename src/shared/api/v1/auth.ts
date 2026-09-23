@@ -1,4 +1,4 @@
-import { clearAccessToken, request, setAccessToken } from '@/api/http'
+import { clearAccessToken, request, setAccessToken } from '@/shared/api/http'
 import type {
   AuthResponse,
   EmailLoginRequest,
@@ -6,7 +6,7 @@ import type {
   LoginRequest,
   RegisterRequest,
   SendEmailCodeRequest,
-} from '@/types/auth'
+} from '@/shared/types/auth'
 
 export const authApi = {
   sendEmailCode(payload: SendEmailCodeRequest) {

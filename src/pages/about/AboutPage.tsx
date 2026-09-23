@@ -1,4 +1,4 @@
-import AppLink from '@/components/common/AppLink'
+import AppLink from '@/shared/ui/AppLink'
 import './AboutPage.css'
 
 const features = [

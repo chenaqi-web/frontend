@@ -1,6 +1,6 @@
-import { env } from '@/config/env'
-import { ACCESS_TOKEN_KEY } from '@/constants/auth'
-import type { ApiResponse } from '@/types/api'
+import { env } from '@/shared/config/env'
+import { ACCESS_TOKEN_KEY } from '@/shared/config/auth'
+import type { ApiResponse } from '@/shared/types/api'
 
 export interface RequestOptions {
   method?: string

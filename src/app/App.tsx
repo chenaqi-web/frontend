@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import SiteLayout from '@/components/layout/SiteLayout'
+import SiteLayout from '@/app/layouts/SiteLayout'
 import LoginPage from '@/pages/auth/LoginPage'
-import { navigate, usePathname } from '@/hooks/usePathname'
-import { routes } from '@/router/routes'
+import { navigate, usePathname } from '@/shared/hooks/usePathname'
+import { routes } from '@/app/routes'
 
 function App() {
   const pathname = usePathname()

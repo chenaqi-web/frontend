@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { userApi } from '@/api/v1/user'
-import type { ManagedUser } from '@/types/user'
-import { logRequestError } from '@/utils/request-error'
+import { userApi } from '@/shared/api/v1/user'
+import type { ManagedUser } from '@/shared/types/user'
+import { logRequestError } from '@/shared/lib/request-error'
 import './UsersView.css'
 
 const statusLabel: Record<ManagedUser['status'], string> = { approved: '正常', blocked: '已拉黑' }

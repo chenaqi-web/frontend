@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { TAB_PATHS, ADMIN_MENU, type AdminTab } from '@/pages/admin/types'
-import { navigate } from '@/hooks/usePathname'
+import { TAB_PATHS, ADMIN_MENU, type AdminTab } from '@/pages/admin/menu'
+import { navigate } from '@/shared/hooks/usePathname'
 
 const icons: Record<string, string> = { '个人中心': '◎', '工作台': '⌂', '内容创作': '✎', '互动反馈': '♡', '系统管理': '⚙' }
 

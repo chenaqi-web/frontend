@@ -1,5 +1,5 @@
 import type { AnchorHTMLAttributes, MouseEvent } from 'react'
-import { navigate } from '@/hooks/usePathname'
+import { navigate } from '@/shared/hooks/usePathname'
 
 interface AppLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
   to: string

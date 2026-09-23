@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
-import { resolveMarkdownImages } from '@/utils/storage'
+import { resolveMarkdownImages } from '@/shared/lib/storage'
 
 interface Props {
   content: string

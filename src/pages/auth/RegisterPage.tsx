@@ -1,9 +1,9 @@
 import { useState, type FormEvent } from 'react'
-import AppLink from '@/components/common/AppLink'
-import { authApi } from '@/api/v1/auth'
-import { navigate } from '@/hooks/usePathname'
-import { logRequestError } from '@/utils/request-error'
-import './login.css'
+import AppLink from '@/shared/ui/AppLink'
+import { authApi } from '@/shared/api/v1/auth'
+import { navigate } from '@/shared/hooks/usePathname'
+import { logRequestError } from '@/shared/lib/request-error'
+import './auth-form.css'
 
 export default function RegisterPage() {
   const [message, setMessage] = useState('')

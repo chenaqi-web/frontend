@@ -1,5 +1,5 @@
-import { request } from '@/api/http'
-import type { CurrentUser, UserListResponse } from '@/types/user'
+import { request } from '@/shared/api/http'
+import type { CurrentUser, UserListResponse } from '@/shared/types/user'
 
 export interface UpdateProfilePayload {
   username: string

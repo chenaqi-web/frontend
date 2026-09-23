@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { storageApi } from '@/api/v1/storage'
-import { userApi, type UpdateProfilePayload } from '@/api/v1/user'
-import type { CurrentUser } from '@/types/user'
-import { logRequestError } from '@/utils/request-error'
+import { storageApi } from '@/shared/api/v1/storage'
+import { userApi, type UpdateProfilePayload } from '@/shared/api/v1/user'
+import type { CurrentUser } from '@/shared/types/user'
+import { logRequestError } from '@/shared/lib/request-error'
 import './ProfileView.css'
 
 const emptyProfile: CurrentUser = { id: 0, username: '', email: '', phone: '', avatar: '', sex: '', age: 0, role: 'user', status: 'approved' }

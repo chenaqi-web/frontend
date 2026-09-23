@@ -1,5 +1,5 @@
-import { request } from '@/api/http'
-import type { VectorCollection, VectorDocumentPage } from '@/types/vector'
+import { request } from '@/shared/api/http'
+import type { VectorCollection, VectorDocumentPage } from '@/shared/types/vector'
 
 export const vectorApi = {
   collections: () => request<VectorCollection[]>('/v1/vector/collections'),

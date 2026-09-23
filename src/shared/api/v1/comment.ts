@@ -1,4 +1,4 @@
-import { request } from '@/api/http'
+import { request } from '@/shared/api/http'
 import type {
   CommentBoolResponse,
   CommentListResponse,
@@ -8,7 +8,7 @@ import type {
   DeleteCommentRequest,
   GetArticleCommentsRequest,
   GetCommentRepliesRequest,
-} from '@/types/comment'
+} from '@/shared/types/comment'
 
 const auth = (token?: string) => (token ? { token } : {})
 

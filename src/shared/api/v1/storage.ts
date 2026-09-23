@@ -1,5 +1,5 @@
-import { request, upload } from '@/api/http'
-import type { DeleteUploadRequest, UploadResponse } from '@/types/storage'
+import { request, upload } from '@/shared/api/http'
+import type { DeleteUploadRequest, UploadResponse } from '@/shared/types/storage'
 
 const auth = (token?: string) => (token ? { token } : {})
 
