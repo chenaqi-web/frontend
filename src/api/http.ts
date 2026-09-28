@@ -52,8 +52,14 @@ export async function request<T>(path: string, options: RequestOptions = {}) {
     method: options.method ?? 'GET',
     headers: headers(options.auth !== false, options.token),
     body: options.body === undefined ? undefined : JSON.stringify(options.body),
-    credentials: path.startsWith('/v1/auth/') ? 'include' : 'same-origin',
+    // refresh_token 存在 HttpOnly Cookie 中，所有 API 请求都必须携带它，
+    // 否则 access token 过期时后端无法执行自动刷新。
+    credentials: 'include',
   })
+  const refreshedAuthorization = response.headers.get('Authorization')
+  if (refreshedAuthorization?.startsWith('Bearer ')) {
+    setAccessToken(refreshedAuthorization.slice('Bearer '.length))
+  }
   if (response.status === 204) return undefined as T
   const payload = await parseResponse(response)
   if (!response.ok) throw new Error((payload as { msg?: string }).msg || `请求失败 (${response.status})`)
