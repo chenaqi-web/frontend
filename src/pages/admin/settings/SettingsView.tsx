@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { aiSettingsApi } from '@/api/v1/ai-settings'
-import type { AiSettings } from '@/types/ai-settings'
-import { logRequestError } from '@/utils/request-error'
+import { aiSettingsApi } from '@/shared/api/v1/ai-settings'
+import type { AiSettings } from '@/shared/types/ai-settings'
+import { logRequestError } from '@/shared/lib/request-error'
 import './SettingsView.css'
 
 export default function SettingsView() {

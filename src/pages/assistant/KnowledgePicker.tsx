@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { VectorCollection } from '@/types/vector'
+import type { VectorCollection } from '@/shared/types/vector'
 
 interface KnowledgePickerProps {
   collections: VectorCollection[]

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { categoryApi } from '@/api/v1/category'
-import type { Category, CategoryType } from '@/types/category'
+import { categoryApi } from '@/shared/api/v1/category'
+import type { Category, CategoryType } from '@/shared/types/category'
 import './CategoriesView.css'
 
 export default function CategoriesView() {

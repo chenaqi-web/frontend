@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { articleApi } from '@/api/v1/article'
-import { categoryApi } from '@/api/v1/category'
-import { storageApi } from '@/api/v1/storage'
-import MarkdownView from '@/components/common/MarkdownView'
-import type { Category, CategoryType } from '@/types/category'
-import type { UploadResponse } from '@/types/storage'
-import { logRequestError } from '@/utils/request-error'
+import { articleApi } from '@/shared/api/v1/article'
+import { categoryApi } from '@/shared/api/v1/category'
+import { storageApi } from '@/shared/api/v1/storage'
+import MarkdownView from '@/shared/ui/MarkdownView'
+import type { Category, CategoryType } from '@/shared/types/category'
+import type { UploadResponse } from '@/shared/types/storage'
+import { logRequestError } from '@/shared/lib/request-error'
 import './CreateArticleView.css'
 
 type Point = { x: number; y: number }

@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { articleApi } from '@/api/v1/article'
-import { categoryApi } from '@/api/v1/category'
-import AppLink from '@/components/common/AppLink'
-import type { Article } from '@/types/article'
-import type { Category, CategoryType } from '@/types/category'
-import { resolveStorageUrl } from '@/utils/storage'
-import { logRequestError } from '@/utils/request-error'
+import { articleApi } from '@/shared/api/v1/article'
+import { categoryApi } from '@/shared/api/v1/category'
+import AppLink from '@/shared/ui/AppLink'
+import type { Article } from '@/shared/types/article'
+import type { Category, CategoryType } from '@/shared/types/category'
+import { resolveStorageUrl } from '@/shared/lib/storage'
+import { logRequestError } from '@/shared/lib/request-error'
 import './BlogPage.css'
 
 const PAGE_SIZE = 12

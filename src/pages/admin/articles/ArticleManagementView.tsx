@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { articleApi } from '@/api/v1/article'
-import { categoryApi } from '@/api/v1/category'
-import { navigate } from '@/hooks/usePathname'
-import type { Article } from '@/types/article'
-import type { Category } from '@/types/category'
-import { logRequestError } from '@/utils/request-error'
+import { articleApi } from '@/shared/api/v1/article'
+import { categoryApi } from '@/shared/api/v1/category'
+import { navigate } from '@/shared/hooks/usePathname'
+import type { Article } from '@/shared/types/article'
+import type { Category } from '@/shared/types/category'
+import { logRequestError } from '@/shared/lib/request-error'
 import './ArticlesView.css'
 
 export default function ArticleManagementView() {

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
-import { vectorApi } from '@/api/v1/vector'
-import type { VectorCollection, VectorDocument } from '@/types/vector'
-import { logRequestError } from '@/utils/request-error'
+import { vectorApi } from '@/shared/api/v1/vector'
+import type { VectorCollection, VectorDocument } from '@/shared/types/vector'
+import { logRequestError } from '@/shared/lib/request-error'
 import './KnowledgeView.css'
 
 const DOCUMENT_PAGE_SIZE = 5
