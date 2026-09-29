@@ -1,26 +1,18 @@
 import { useEffect, useState } from 'react'
-import { CURRENT_USER_KEY } from '@/shared/config/auth'
 import { navigate } from '@/shared/hooks/usePathname'
 import { TAB_TITLES, type AdminTab } from '@/pages/admin/menu'
 import { resolveStorageUrl } from '@/shared/lib/storage'
+import { clearCurrentUser, readCurrentUser } from '@/shared/lib/current-user'
 
 type TopbarUser = { username?: string; role?: string; avatar?: string }
 
-function readCurrentUser() {
-  try {
-    return JSON.parse(localStorage.getItem(CURRENT_USER_KEY) ?? '{}') as TopbarUser
-  } catch {
-    return {} as TopbarUser
-  }
-}
-
 export default function AdminTopbar({ tab }: { tab: AdminTab }) {
-  const [currentUser, setCurrentUser] = useState<TopbarUser>(readCurrentUser)
-  const logout = () => { localStorage.removeItem('renai_access_token'); localStorage.removeItem(CURRENT_USER_KEY); navigate('/login') }
+  const [currentUser, setCurrentUser] = useState<TopbarUser>(() => readCurrentUser() as TopbarUser)
+  const logout = () => { localStorage.removeItem('renai_access_token'); clearCurrentUser(); navigate('/login') }
   const avatar = resolveStorageUrl(currentUser.avatar ?? '')
 
   useEffect(() => {
-    const updateUser = () => setCurrentUser(readCurrentUser())
+    const updateUser = () => setCurrentUser(readCurrentUser() as TopbarUser)
     window.addEventListener('renai:user-updated', updateUser)
     return () => window.removeEventListener('renai:user-updated', updateUser)
   }, [])

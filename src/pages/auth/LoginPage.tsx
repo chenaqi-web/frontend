@@ -1,9 +1,11 @@
 import { useState, type FormEvent } from 'react'
 import AppLink from '@/shared/ui/AppLink'
 import { authApi } from '@/shared/api/v1/auth'
+import { userApi } from '@/shared/api/v1/user'
 import type { EmailCodePurpose } from '@/shared/types/auth'
 import { navigate } from '@/shared/hooks/usePathname'
 import { logRequestError } from '@/shared/lib/request-error'
+import { clearCurrentUser, saveCurrentUser } from '@/shared/lib/current-user'
 import './auth-form.css'
 
 type Mode = 'password' | 'email'
@@ -41,8 +43,16 @@ export default function LoginPage() {
       const result = mode === 'password'
         ? await authApi.login({ username: String(data.get('username')), password: String(data.get('password')) })
         : await authApi.emailLogin({ email: String(data.get('email')), code: String(data.get('code')) })
-      localStorage.setItem('renai_current_user', JSON.stringify(result.user))
-      setMessage('登录成功'); window.setTimeout(() => navigate('/'), 300)
+      try {
+        saveCurrentUser(result.user ?? await userApi.current())
+      } catch (profileError) {
+        logRequestError('登录后加载用户信息失败', profileError)
+        clearCurrentUser()
+      }
+      const redirectTo = typeof window.history.state?.redirectTo === 'string' && window.history.state.redirectTo.startsWith('/')
+        ? window.history.state.redirectTo
+        : '/'
+      setMessage('登录成功'); window.setTimeout(() => navigate(redirectTo), 300)
     } catch (error) {
       logRequestError('登录失败', error)
       const detail = error instanceof Error ? error.message : ''

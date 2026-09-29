@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import AppLink from '@/shared/ui/AppLink'
 import { routes } from '@/app/routes'
 import { resolveStorageUrl } from '@/shared/lib/storage'
+import { clearCurrentUser, readCurrentUser } from '@/shared/lib/current-user'
 
 type CurrentUser = { username?: string; avatar?: string }
 type IconName = 'home' | 'diary' | 'blog' | 'assistant' | 'about'
@@ -23,12 +24,12 @@ export default function SiteLayout({ children, pathname }: { children: ReactNode
   const isHome = pathname === '/'
   const hideFooter = pathname === '/assistant' || pathname === '/diary'
   const [hasScrolled, setHasScrolled] = useState(false)
-  const currentUser = JSON.parse(localStorage.getItem('renai_current_user') ?? '{}') as CurrentUser
+  const currentUser = readCurrentUser() as CurrentUser
   const loggedIn = Boolean(localStorage.getItem('renai_access_token'))
   const isActive = (path: string) => pathname === path || (path !== '/' && pathname.startsWith(`${path}/`))
   const avatar = resolveStorageUrl(currentUser.avatar ?? '')
   const initial = (currentUser.username || 'U').slice(0, 1).toUpperCase()
-  const logout = () => { localStorage.removeItem('renai_access_token'); localStorage.removeItem('renai_current_user'); window.location.href = '/login' }
+  const logout = () => { localStorage.removeItem('renai_access_token'); clearCurrentUser(); window.location.href = '/login' }
 
   useEffect(() => {
     if (!isHome) {

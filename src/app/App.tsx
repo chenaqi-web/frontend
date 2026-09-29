@@ -11,7 +11,7 @@ function App() {
 
   useEffect(() => {
     if (pathname.startsWith('/admin') && !localStorage.getItem('renai_access_token')) {
-      navigate('/login')
+      navigate('/login', { redirectTo: pathname })
       return
     }
     setIsAuthenticated(Boolean(localStorage.getItem('renai_access_token')))

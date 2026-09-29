@@ -9,6 +9,7 @@ import type { Article } from '@/shared/types/article'
 import type { CommentItem } from '@/shared/types/comment'
 import { resolveStorageUrl } from '@/shared/lib/storage'
 import { logRequestError } from '@/shared/lib/request-error'
+import { readCurrentUser } from '@/shared/lib/current-user'
 import './BlogPage.css'
 
 const formatDateTime = (value: string | number) => {
@@ -51,7 +52,7 @@ export default function BlogDetailPage() {
   const [likingCommentIDs, setLikingCommentIDs] = useState<Record<number, boolean>>({})
   const loadedArticleID = useRef<number | null>(null)
   const loggedIn = Boolean(localStorage.getItem('renai_access_token'))
-  const currentUser = JSON.parse(localStorage.getItem('renai_current_user') ?? '{}') as { username?: string; avatar?: string }
+  const currentUser = readCurrentUser() as { username?: string; avatar?: string }
 
   const loadComments = async () => {
     if (!articleID) return

@@ -3,15 +3,15 @@ import { storageApi } from '@/shared/api/v1/storage'
 import { userApi, type UpdateProfilePayload } from '@/shared/api/v1/user'
 import type { CurrentUser } from '@/shared/types/user'
 import { logRequestError } from '@/shared/lib/request-error'
+import { readCurrentUser, saveCurrentUser } from '@/shared/lib/current-user'
 import './ProfileView.css'
 
 const emptyProfile: CurrentUser = { id: 0, username: '', email: '', phone: '', avatar: '', sex: '', age: 0, role: 'user', status: 'approved' }
 const sexOptions = [{ value: '', label: '未设置' }, { value: 'male', label: '男' }, { value: 'female', label: '女' }] as const
 const sexLabel = (value: string) => sexOptions.find((item) => item.value === value)?.label ?? '未设置'
-const saveCurrentUser = (user: CurrentUser) => localStorage.setItem('renai_current_user', JSON.stringify(user))
 
 export default function ProfileView() {
-  const [profile, setProfile] = useState<CurrentUser>(() => ({ ...emptyProfile, ...JSON.parse(localStorage.getItem('renai_current_user') ?? '{}') }))
+  const [profile, setProfile] = useState<CurrentUser>(() => ({ ...emptyProfile, ...readCurrentUser() }))
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)

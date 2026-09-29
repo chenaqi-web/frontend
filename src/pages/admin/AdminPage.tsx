@@ -14,6 +14,7 @@ import KnowledgeView from '@/pages/admin/knowledge/KnowledgeView'
 import UsersView from '@/pages/admin/users/UsersView'
 import Dashboard from '@/pages/admin/Dashboard'
 import { TAB_PATHS, TAB_TITLES, type AdminTab } from '@/pages/admin/menu'
+import { clearCurrentUser, readCurrentUser } from '@/shared/lib/current-user'
 import './AdminPage.css'
 
 const tabFromPath = (path: string) => (Object.keys(TAB_PATHS).find((key) => TAB_PATHS[key as AdminTab] === path) ?? 'profile') as AdminTab
@@ -21,13 +22,13 @@ const tabFromPath = (path: string) => (Object.keys(TAB_PATHS).find((key) => TAB_
 export default function AdminPage() {
   const path = usePathname()
   const [tab, setTab] = useState<AdminTab>(() => tabFromPath(path))
-  const currentUser = JSON.parse(localStorage.getItem('renai_current_user') ?? '{}') as { role?: string }
+  const currentUser = readCurrentUser() as { role?: string }
 
   useEffect(() => setTab(tabFromPath(path)), [path])
 
   const logout = () => {
     clearAccessToken()
-    localStorage.removeItem('renai_current_user')
+    clearCurrentUser()
     navigate('/login')
   }
 
