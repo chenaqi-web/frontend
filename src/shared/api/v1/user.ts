@@ -18,6 +18,10 @@ export const userApi = {
     return request<CurrentUser>('/v1/user/profile')
   },
 
+  getPublicProfile(id: number) {
+    return request<CurrentUser>(`/v1/user/profile/${id}`, { auth: false })
+  },
+
   updateProfile(payload: UpdateProfilePayload) {
     return request<null>('/v1/user/profile', { method: 'PUT', body: payload }).then(() => userApi.getProfile())
   },

@@ -37,8 +37,8 @@ export const articleApi = {
     return request<ArticleBoolResponse>('/v1/article/create', { method: 'POST', body: payload, ...auth(token) })
   },
 
-  listByUser(params: ListMyArticlesRequest = {}, token?: string) {
-    return request<ListArticlesResponse>('/v1/article/list/by_user_id', { method: 'POST', body: params, ...auth(token) })
+  listByUser(params: ListMyArticlesRequest = {}, token?: string | null) {
+    return request<ListArticlesResponse>('/v1/article/list/by_user_id', { method: 'POST', body: params, ...(token === null ? { auth: false } : auth(token)) })
   },
 
   delete(payload: DeleteArticleRequest, token?: string) {

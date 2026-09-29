@@ -44,7 +44,9 @@ export interface CreateArticleRequest {
   authorID?: number
 }
 
-export interface ListMyArticlesRequest extends ListArticlesRequest {}
+export interface ListMyArticlesRequest extends ListArticlesRequest {
+  authorID?: number
+}
 
 export interface GetArticleRequest {
   id: number

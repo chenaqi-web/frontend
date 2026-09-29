@@ -8,6 +8,7 @@ import LoginPage from '@/pages/auth/LoginPage'
 import RegisterPage from '@/pages/auth/RegisterPage'
 import AssistantPage from '@/pages/assistant/AssistantPage'
 import AdminPage from '@/pages/admin/AdminPage'
+import UserProfilePage from '@/pages/user/UserProfilePage'
 
 export interface AppRoute {
   path: string
@@ -23,6 +24,7 @@ export const routes: AppRoute[] = [
   { path: '/diary', label: '生活小记', element: <DiaryPage />, showInNav: true },
   { path: '/blog/:id', label: '博客详情', element: <BlogDetailPage /> },
   { path: '/blog', label: '知识专栏', element: <BlogPage />, showInNav: true },
+  { path: '/users/:id', label: '用户主页', element: <UserProfilePage /> },
   { path: '/assistant', label: '站内助手', element: <AssistantPage />, showInNav: true },
   { path: '/about', label: '关于我们', element: <AboutPage />, showInNav: true },
   { path: '/login', label: '登录', element: <LoginPage /> },

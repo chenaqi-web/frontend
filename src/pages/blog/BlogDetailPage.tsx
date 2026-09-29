@@ -17,11 +17,13 @@ const formatDateTime = (value: string | number) => {
   return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })
 }
 
-const Avatar = ({ src, name, small = false }: { src?: string; name: string; small?: boolean }) => (
-  <span className={small ? 'front-comment-avatar small' : 'front-comment-avatar'}>
+const Avatar = ({ src, name, small = false, userID }: { src?: string; name: string; small?: boolean; userID?: number }) => {
+  const content = <span className={small ? 'front-comment-avatar small' : 'front-comment-avatar'}>
     {src ? <img src={resolveStorageUrl(src)} alt="" /> : name.slice(0, 1).toUpperCase()}
   </span>
-)
+
+  return userID ? <AppLink className="front-comment-avatar-link" to={`/users/${userID}`} aria-label={`查看${name}的主页`} title={`查看${name}的主页`}>{content}</AppLink> : content
+}
 
 function ActionIcon({ name }: { name: 'view' | 'comment' | 'like' | 'top' }) {
   const paths = name === 'view'
@@ -52,7 +54,7 @@ export default function BlogDetailPage() {
   const [likingCommentIDs, setLikingCommentIDs] = useState<Record<number, boolean>>({})
   const loadedArticleID = useRef<number | null>(null)
   const loggedIn = Boolean(localStorage.getItem('renai_access_token'))
-  const currentUser = readCurrentUser() as { username?: string; avatar?: string }
+  const currentUser = readCurrentUser() as { id?: number; username?: string; avatar?: string }
 
   const loadComments = async () => {
     if (!articleID) return
@@ -194,15 +196,15 @@ export default function BlogDetailPage() {
       <header className="front-detail-header">
         <AppLink to="/blog" className="front-back-link">返回博客</AppLink>
         <h1>{article.title}</h1>
-        <div className="front-detail-author"><Avatar src={article.authorAvatar} name={article.authorName || 'R'} /><div><strong>{article.authorName || 'Renai 成员'}</strong><span>{formatDateTime(article.createdAt)} · 约 {readingMinutes} 分钟阅读</span></div></div>
+        <div className="front-detail-author"><Avatar src={article.authorAvatar} name={article.authorName || 'R'} userID={article.authorID} /><div><strong>{article.authorName || 'Renai 成员'}</strong><span>{formatDateTime(article.createdAt)} · 约 {readingMinutes} 分钟阅读</span></div></div>
       </header>
       {article.coverImage && <img className="front-detail-cover" src={resolveStorageUrl(article.coverImage)} alt={`${article.title}封面`} />}
       <section className="front-article-body"><MarkdownView content={article.content} /></section>
       <section className="front-comments" id="comments">
         <header><div><span>一起交流</span><h2>评论</h2></div><strong>{comments.length} 条</strong></header>
-        {loggedIn ? <form className="front-comment-form" onSubmit={submitComment}><Avatar src={currentUser.avatar} name={currentUser.username || '我'} /><div><label htmlFor="new-comment">写下你的想法</label><textarea id="new-comment" value={commentText} maxLength={1000} onChange={(event) => setCommentText(event.target.value)} placeholder="友善交流，让讨论更有价值。" /><footer><span>{commentText.length}/1000</span><button type="submit" disabled={submitting || !commentText.trim()}>{submitting ? '发布中...' : '发布评论'}</button></footer></div></form> : <div className="front-comment-login"><span>登录后参与评论，与社团成员继续讨论。</span><button type="button" onClick={() => navigate('/login')}>去登录</button></div>}
+        {loggedIn ? <form className="front-comment-form" onSubmit={submitComment}><Avatar src={currentUser.avatar} name={currentUser.username || '我'} userID={currentUser.id} /><div><label htmlFor="new-comment">写下你的想法</label><textarea id="new-comment" value={commentText} maxLength={1000} onChange={(event) => setCommentText(event.target.value)} placeholder="友善交流，让讨论更有价值。" /><footer><span>{commentText.length}/1000</span><button type="submit" disabled={submitting || !commentText.trim()}>{submitting ? '发布中...' : '发布评论'}</button></footer></div></form> : <div className="front-comment-login"><span>登录后参与评论，与社团成员继续讨论。</span><button type="button" onClick={() => navigate('/login')}>去登录</button></div>}
         {message && <p className="front-comment-message" role="status">{message}</p>}
-        {commentsLoading ? <div className="front-comments-state">正在加载评论...</div> : comments.length === 0 ? <div className="front-comments-state"><strong>还没有评论</strong><span>成为第一个参与讨论的人。</span></div> : <div className="front-comment-list">{comments.map((comment) => <article className="front-comment" key={comment.id}><Avatar src={comment.userAvatar} name={comment.userName || 'R'} /><div><header><strong>{comment.userName || 'Renai 成员'}</strong><time>{formatDateTime(comment.createdAt)}</time></header><p>{comment.content}</p><div className="front-comment-actions"><button type="button" className={`front-comment-like${comment.isLiked ? ' liked' : ''}`} disabled={likingCommentIDs[comment.id]} onClick={() => void toggleCommentLike(comment)} aria-label={comment.isLiked ? '取消点赞评论' : '点赞评论'} title={comment.isLiked ? '取消点赞' : '点赞'}><ActionIcon name="like" /><span>{comment.likeCount}</span></button><button type="button" onClick={() => loggedIn ? setReplyTarget(comment) : navigate('/login')}>回复</button>{comment.childCount > 0 && <button type="button" onClick={() => void toggleReplies(comment)}>{expandedReplies[comment.id] ? '收起回复' : `查看 ${comment.childCount} 条回复`}</button>}</div>{expandedReplies[comment.id] && <div className="front-replies">{replies[comment.id] ? replies[comment.id].map((reply) => <article key={reply.id}><Avatar src={reply.userAvatar} name={reply.userName || 'R'} small /><div><header><strong>{reply.userName || 'Renai 成员'}</strong><time>{formatDateTime(reply.createdAt)}</time></header><p>{reply.replyToUserName && <span className="front-reply-to">回复 @{reply.replyToUserName}：</span>}{reply.content}</p><div className="front-comment-actions front-reply-actions"><button type="button" className={`front-comment-like${reply.isLiked ? ' liked' : ''}`} disabled={likingCommentIDs[reply.id]} onClick={() => void toggleCommentLike(reply)} aria-label={reply.isLiked ? '取消点赞评论' : '点赞评论'} title={reply.isLiked ? '取消点赞' : '点赞'}><ActionIcon name="like" /><span>{reply.likeCount}</span></button><button type="button" onClick={() => loggedIn ? setReplyTarget(reply) : navigate('/login')}>回复</button></div></div></article>) : <span>正在加载回复...</span>}</div>}</div></article>)}</div>}
+        {commentsLoading ? <div className="front-comments-state">正在加载评论...</div> : comments.length === 0 ? <div className="front-comments-state"><strong>还没有评论</strong><span>成为第一个参与讨论的人。</span></div> : <div className="front-comment-list">{comments.map((comment) => <article className="front-comment" key={comment.id}><Avatar src={comment.userAvatar} name={comment.userName || 'R'} userID={comment.userId} /><div><header><strong>{comment.userName || 'Renai 成员'}</strong><time>{formatDateTime(comment.createdAt)}</time></header><p>{comment.content}</p><div className="front-comment-actions"><button type="button" className={`front-comment-like${comment.isLiked ? ' liked' : ''}`} disabled={likingCommentIDs[comment.id]} onClick={() => void toggleCommentLike(comment)} aria-label={comment.isLiked ? '取消点赞评论' : '点赞评论'} title={comment.isLiked ? '取消点赞' : '点赞'}><ActionIcon name="like" /><span>{comment.likeCount}</span></button><button type="button" onClick={() => loggedIn ? setReplyTarget(comment) : navigate('/login')}>回复</button>{comment.childCount > 0 && <button type="button" onClick={() => void toggleReplies(comment)}>{expandedReplies[comment.id] ? '收起回复' : `查看 ${comment.childCount} 条回复`}</button>}</div>{expandedReplies[comment.id] && <div className="front-replies">{replies[comment.id] ? replies[comment.id].map((reply) => <article key={reply.id}><Avatar src={reply.userAvatar} name={reply.userName || 'R'} userID={reply.userId} small /><div><header><strong>{reply.userName || 'Renai 成员'}</strong><time>{formatDateTime(reply.createdAt)}</time></header><p>{reply.replyToUserName && <span className="front-reply-to">回复 @{reply.replyToUserName}：</span>}{reply.content}</p><div className="front-comment-actions front-reply-actions"><button type="button" className={`front-comment-like${reply.isLiked ? ' liked' : ''}`} disabled={likingCommentIDs[reply.id]} onClick={() => void toggleCommentLike(reply)} aria-label={reply.isLiked ? '取消点赞评论' : '点赞评论'} title={reply.isLiked ? '取消点赞' : '点赞'}><ActionIcon name="like" /><span>{reply.likeCount}</span></button><button type="button" onClick={() => loggedIn ? setReplyTarget(reply) : navigate('/login')}>回复</button></div></div></article>) : <span>正在加载回复...</span>}</div>}</div></article>)}</div>}
       </section>
     </article>
     <aside className="front-detail-aside">

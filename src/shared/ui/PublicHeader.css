@@ -3,7 +3,7 @@
   top: 0;
   z-index: 40;
   display: grid;
-  grid-template-columns: auto auto minmax(220px, 460px) auto;
+  grid-template-columns: auto auto minmax(320px, 635px) auto;
   align-items: center;
   gap: 22px;
   min-height: 70px;
@@ -161,23 +161,56 @@
   flex: none;
 }
 
+.nav-account-chevron {
+  width: 17px;
+  height: 17px;
+  flex: none;
+  color: #9aa8b5;
+}
+
+.public-header .nav-account-actions > a {
+  min-height: 43px;
+  font-size: 13px;
+}
+
+.public-header .nav-account-popover > button {
+  min-height: 43px;
+  margin-top: 8px;
+  padding: 0 10px;
+  border-top: 1px solid #e9eef3;
+  border-radius: 7px;
+  color: #465a70;
+  font: 500 13px 'Noto Sans SC', system-ui, sans-serif;
+}
+
+.public-header .nav-account-popover > button:hover {
+  background: #f2f8fd;
+  color: #258fce;
+}
+
+.public-header .nav-account-popover > button:hover .nav-account-chevron,
+.public-header .nav-account-actions > a:hover .nav-account-chevron {
+  color: #258fce;
+}
+
 .public-search {
   display: flex;
   align-items: center;
-  gap: 8px;
-  height: 42px;
+  gap: 10px;
+  height: 48px;
   min-width: 0;
-  padding: 0 13px;
-  border: 1px solid #dfe7ee;
-  border-radius: 9px;
-  background: #f7f9fb;
-  color: #8a96a3;
+  padding: 0 6px 0 18px;
+  border: 1px solid #d6dde6;
+  border-radius: 24px;
+  background: #f5f7fa;
+  color: #7e8c9a;
+  transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
 }
 
 .public-search:focus-within {
-  border-color: #74bee9;
+  border-color: #9fc7e8;
   background: #fff;
-  box-shadow: 0 0 0 3px rgba(66, 165, 228, .14);
+  box-shadow: 0 5px 14px rgba(55, 126, 184, .12);
 }
 
 .public-search .public-nav-icon {
@@ -191,8 +224,31 @@
   border: 0;
   outline: 0;
   background: transparent;
-  color: #263241;
+  color: #334155;
   font: 14px 'Noto Sans SC', system-ui, sans-serif;
+}
+
+.public-search input::placeholder {
+  color: #94a0ad;
+}
+
+.public-search button {
+  width: 78px;
+  height: 32px;
+  flex: none;
+  border: 1px solid #9bc8ea;
+  border-radius: 17px;
+  background: #eaf5fd;
+  color: #347fb9;
+  font: 600 13px 'Noto Sans SC', system-ui, sans-serif;
+  cursor: pointer;
+  transition: background .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+
+.public-search button:hover {
+  border-color: #8abfe6;
+  background: #dceffd;
+  box-shadow: 0 3px 8px rgba(55, 126, 184, .16);
 }
 
 .public-actions {
@@ -228,6 +284,7 @@
 }
 
 .public-action:hover,
+.public-action.active,
 .public-login:hover {
   color: #258fce;
 }
@@ -240,6 +297,7 @@
   background: #ff6699;
   color: #fff;
   font-size: 13px;
+  white-space: nowrap;
 }
 
 .public-creator:hover {
@@ -312,7 +370,13 @@
   .public-search {
     grid-column: 1 / -1;
     order: 4;
-    height: 40px;
+    height: 46px;
+    padding-left: 14px;
+  }
+
+  .public-search button {
+    width: 70px;
+    height: 30px;
   }
 
   .public-nav {
