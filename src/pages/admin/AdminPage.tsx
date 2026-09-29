@@ -37,6 +37,8 @@ export default function AdminPage() {
     navigate(TAB_PATHS[nextTab])
   }
 
+  if (tab === 'profile') return <ProfileView />
+
   return (
     <main className="admin-page">
       <AdminSidebar tab={tab} role={currentUser.role ?? 'user'} onChange={changeTab} />
@@ -55,9 +57,7 @@ export default function AdminPage() {
                   ? <ArticlesView />
                   : tab === 'likes'
                     ? <LikesView />
-                    : tab === 'profile'
-                      ? <ProfileView />
-                      : tab === 'settings'
+                    : tab === 'settings'
                         ? <SettingsView />
                         : tab === 'knowledge'
                           ? <KnowledgeView />

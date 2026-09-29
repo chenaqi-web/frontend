@@ -5,7 +5,7 @@ import { userApi } from '@/shared/api/v1/user'
 import type { EmailCodePurpose } from '@/shared/types/auth'
 import { navigate } from '@/shared/hooks/usePathname'
 import { logRequestError } from '@/shared/lib/request-error'
-import { clearCurrentUser, saveCurrentUser } from '@/shared/lib/current-user'
+import { saveCurrentUser } from '@/shared/lib/current-user'
 import './auth-form.css'
 
 type Mode = 'password' | 'email'
@@ -43,11 +43,11 @@ export default function LoginPage() {
       const result = mode === 'password'
         ? await authApi.login({ username: String(data.get('username')), password: String(data.get('password')) })
         : await authApi.emailLogin({ email: String(data.get('email')), code: String(data.get('code')) })
+      saveCurrentUser({ id: result.id, username: result.username, avatar: result.avatar, role: result.role, status: result.status })
       try {
-        saveCurrentUser(result.user ?? await userApi.current())
+        saveCurrentUser(await userApi.current())
       } catch (profileError) {
         logRequestError('登录后加载用户信息失败', profileError)
-        clearCurrentUser()
       }
       const redirectTo = typeof window.history.state?.redirectTo === 'string' && window.history.state.redirectTo.startsWith('/')
         ? window.history.state.redirectTo

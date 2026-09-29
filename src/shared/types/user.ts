@@ -1,6 +1,19 @@
 import type { AuthUser } from '@/shared/types/auth'
 
-export type CurrentUser = AuthUser
+export interface CurrentUser extends AuthUser {
+  email: string
+  phone: string
+  sex: string
+  birthday: string
+  signature: string
+  article_count: number
+  followers_count: number
+  following_count: number
+  like_count: number
+  receive_like_count: number
+  favor_count: number
+  receive_favor_count: number
+}
 
 export interface ManagedUser {
   id: number
@@ -9,14 +22,16 @@ export interface ManagedUser {
   phone: string
   avatar: string
   sex: string
-  age: number
+  birthday: string
   role: string
   status: 'approved' | 'blocked'
-  like_count: number
-  receive_like_count: number
 }
 
 export interface UserListResponse {
   users: ManagedUser[]
   total: number
+}
+
+export interface UserAvatarResponse {
+  avatar: string
 }

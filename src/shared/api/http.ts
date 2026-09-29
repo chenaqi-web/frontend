@@ -9,6 +9,10 @@ export interface RequestOptions {
   token?: string | null
 }
 
+export interface UploadOptions {
+  method?: string
+}
+
 export function getAccessToken() {
   return localStorage.getItem(ACCESS_TOKEN_KEY)
 }
@@ -66,15 +70,16 @@ export async function request<T>(path: string, options: RequestOptions = {}) {
   return unwrap<T>(payload)
 }
 
-export async function upload<T>(path: string, file: File, fields: Record<string, string> = {}) {
+export async function upload<T>(path: string, file: File, fields: Record<string, string> = {}, options: UploadOptions = {}) {
   const form = new FormData()
   form.set('file', file)
   Object.entries(fields).forEach(([key, value]) => form.set(key, value))
   const token = getAccessToken()
   const response = await fetch(`${env.apiBaseUrl}${path}`, {
-    method: 'POST',
+    method: options.method ?? 'POST',
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     body: form,
+    credentials: 'include',
   })
   const payload = await parseResponse(response)
   if (!response.ok) throw new Error((payload as { msg?: string }).msg || `请求失败 (${response.status})`)

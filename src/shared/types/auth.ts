@@ -32,17 +32,21 @@ export interface ForgotPasswordRequest {
 export interface AuthUser {
   id: number
   username: string
-  email: string
-  phone: string
+  email?: string
+  phone?: string
   avatar: string
-  sex: string
-  age: number
+  sex?: string
+  birthday?: string
   role: string
   status: string
 }
 
 export interface AuthResponse {
   access_token: string
-  access_expires_in: number
-  user: AuthUser
+  access_expires: number
+  id: number
+  username: string
+  avatar: string
+  role: string
+  status: string
 }

@@ -24,6 +24,15 @@ export default function BlogPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  const applyQueryFromUrl = () => {
+    const nextQuery = new URLSearchParams(window.location.search).get('q')?.trim() ?? ''
+    setPage(1)
+    setSelectedType(0)
+    setSelectedCategory(0)
+    setQuery(nextQuery)
+    setSearchInput(nextQuery)
+  }
+
   useEffect(() => {
     void categoryApi.listTypes().then(async ({types}) => {
       const children = await Promise.all(types.map((type) => categoryApi.listCategories({parentID: type.id})));
@@ -32,6 +41,15 @@ export default function BlogPage() {
       logRequestError('加载文章分类失败', reason);
       setError('加载失败，请稍后重试')
     })
+  }, [])
+  useEffect(() => {
+    applyQueryFromUrl()
+    window.addEventListener('popstate', applyQueryFromUrl)
+    window.addEventListener('renai:blog-search', applyQueryFromUrl)
+    return () => {
+      window.removeEventListener('popstate', applyQueryFromUrl)
+      window.removeEventListener('renai:blog-search', applyQueryFromUrl)
+    }
   }, [])
   useEffect(() => {
     let active = true;

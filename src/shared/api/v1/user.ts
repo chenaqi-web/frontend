@@ -1,16 +1,17 @@
-import { request } from '@/shared/api/http'
-import type { CurrentUser, UserListResponse } from '@/shared/types/user'
+import { request, upload } from '@/shared/api/http'
+import type { CurrentUser, UserAvatarResponse, UserListResponse } from '@/shared/types/user'
 
 export interface UpdateProfilePayload {
   username: string
   phone: string
   sex: '' | 'male' | 'female'
-  age: number
+  birthday: string
+  signature: string
 }
 
 export const userApi = {
   current(token?: string) {
-    return request<CurrentUser>('/v1/user/', { method: 'GET', ...(token ? { token } : {}) })
+    return request<CurrentUser>('/v1/user/profile', { method: 'GET', ...(token ? { token } : {}) })
   },
 
   getProfile() {
@@ -18,20 +19,25 @@ export const userApi = {
   },
 
   updateProfile(payload: UpdateProfilePayload) {
-    return request<CurrentUser>('/v1/user/profile', { method: 'PUT', body: payload })
+    return request<null>('/v1/user/profile', { method: 'PUT', body: payload }).then(() => userApi.getProfile())
   },
 
-  updateAvatar(avatar: string) {
-    return request<CurrentUser>('/v1/user/avatar', { method: 'PUT', body: { avatar } })
+  updateAvatar(file: File) {
+    return upload<UserAvatarResponse>('/v1/user/avatar', file, {}, { method: 'PUT' })
   },
 
   list(keyword = '', page = 1, pageSize = 20) {
-    const query = new URLSearchParams({ page: String(page), page_size: String(pageSize) })
-    if (keyword.trim()) query.set('keyword', keyword.trim())
-    return request<UserListResponse>(`/v1/user/list?${query.toString()}`)
+    const search = keyword.trim()
+    if (search) {
+      const query = new URLSearchParams({ keyword: search, page: String(page), page_size: String(pageSize) })
+      return request<UserListResponse>(`/v1/admin/search?${query.toString()}`)
+    }
+    const query = new URLSearchParams({ page: String(page), pageSize: String(pageSize) })
+    return request<UserListResponse>(`/v1/admin/list?${query.toString()}`)
   },
 
   updateBlacklist(userID: number, blacklisted: boolean) {
-    return request<{ success: boolean }>('/v1/user/status', { method: 'PUT', body: { user_id: userID, blacklisted } })
+    const path = blacklisted ? '/v1/admin/blacklist/add' : '/v1/admin/blacklist/remove'
+    return request<null>(path, { method: 'PUT', body: { user_id: userID } })
   },
 }
