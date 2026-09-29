@@ -113,6 +113,82 @@
   color: #12a9e8;
 }
 
+.space-public-card {
+  margin-bottom: 22px;
+  padding: 28px 34px;
+  border: 1px solid #e5edf5;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 12px 34px rgba(38, 80, 120, .06);
+}
+
+.space-public-card header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.space-public-card header span {
+  color: #168acb;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .12em;
+}
+
+.space-public-card h2 {
+  margin: 7px 0 0;
+  color: #20232a;
+  font-size: 22px;
+}
+
+.space-public-card header strong {
+  color: #8a96a3;
+  font-size: 12px;
+}
+
+.space-public-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.space-public-fields span,
+.space-public-metrics span {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid #edf2f7;
+  border-radius: 9px;
+  background: #f8fbfd;
+  color: #5f6d7c;
+  font-size: 13px;
+}
+
+.space-public-fields b {
+  color: #263241;
+  font-size: 13px;
+}
+
+.space-public-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 10px;
+}
+
+.space-public-metrics span {
+  place-items: center;
+  text-align: center;
+}
+
+.space-public-metrics b {
+  color: #168acb;
+  font-size: 20px;
+}
+
 .space-avatar {
   cursor: default;
 }
@@ -175,6 +251,19 @@
     padding: 24px;
   }
 
+  .space-public-card {
+    padding: 24px 18px;
+  }
+
+  .space-public-card header {
+    flex-direction: column;
+  }
+
+  .space-public-fields,
+  .space-public-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .space-inline-actions {
     width: 100%;
     margin-left: 0;
@@ -191,6 +280,11 @@
   }
 
   .space-work-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .space-public-fields,
+  .space-public-metrics {
     grid-template-columns: 1fr;
   }
 }
@@ -396,6 +490,11 @@
   color: #347fb9;
   font: 800 18px/1 'Noto Sans SC', system-ui, sans-serif;
   cursor: pointer;
+}
+
+.profile-date-head button.year {
+  width: 30px;
+  color: #6a91b3;
 }
 
 .profile-date-head button:hover {

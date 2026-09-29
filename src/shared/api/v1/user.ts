@@ -1,5 +1,5 @@
 import { request, upload } from '@/shared/api/http'
-import type { CurrentUser, UserAvatarResponse, UserListResponse } from '@/shared/types/user'
+import type { CurrentUser, UserAvatarResponse, UserListResponse, VisitorProfile } from '@/shared/types/user'
 
 export interface UpdateProfilePayload {
   username: string
@@ -19,7 +19,7 @@ export const userApi = {
   },
 
   getPublicProfile(id: number) {
-    return request<CurrentUser>(`/v1/user/profile/${id}`, { auth: false })
+    return request<VisitorProfile>(`/v1/user/profile/${id}`, { auth: false })
   },
 
   updateProfile(payload: UpdateProfilePayload) {
