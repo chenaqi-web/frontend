@@ -73,7 +73,7 @@ export default function PublicHeader({ pathname, overlay = false, scrolled = fal
       <AppLink className={`public-action${isActive('/about') ? ' active' : ''}`} to="/about" aria-label="关于"><PublicIcon name="about" /><span>关于</span></AppLink>
       <button type="button" className="public-action" onClick={() => setTip('消息暂未开发')} aria-label="消息"><PublicIcon name="message" /><span>消息</span></button>
       <button type="button" className="public-action" onClick={() => setTip('收藏暂未开发')} aria-label="收藏"><PublicIcon name="favorite" /><span>收藏</span></button>
-      <button type="button" className="public-action public-creator" onClick={() => loggedIn ? navigate('/admin/my-articles') : navigate('/login')}><span>创作中心</span></button>
+      <button type="button" className="public-action public-creator" onClick={() => loggedIn ? navigate('/admin/creator') : navigate('/login')}><span>创作中心</span></button>
     </div>
     {tip && <div className="public-tip" role="status">{tip}</div>}
   </header>

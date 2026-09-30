@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { articleApi } from '@/shared/api/v1/article'
 import { categoryApi } from '@/shared/api/v1/category'
-import { storageApi } from '@/shared/api/v1/storage'
 import MarkdownView from '@/shared/ui/MarkdownView'
 import type { Category, CategoryType } from '@/shared/types/category'
-import type { UploadResponse } from '@/shared/types/storage'
+import type { Article, ArticleImageUploadResponse } from '@/shared/types/article'
 import { logRequestError } from '@/shared/lib/request-error'
 import './CreateArticleView.css'
 
@@ -12,6 +11,10 @@ type Point = { x: number; y: number }
 type ImageSize = { width: number; height: number }
 
 const COVER_RATIO = 16 / 9
+const readEditingArticle = () => {
+  const state = window.history.state as { article?: Article } | null
+  return state?.article ?? null
+}
 
 function ArticlePreview({ content }: { content: string }) {
   return <section className="front-article-body editor-preview" aria-label="文章预览">
@@ -27,11 +30,12 @@ export default function CreateArticleView() {
   const [categoryGroups, setCategoryGroups] = useState<Array<{ type: CategoryType; categories: Category[] }>>([])
   const [categoryTypeID, setCategoryTypeID] = useState(0)
   const [openCategoryMenu, setOpenCategoryMenu] = useState<'type' | 'category' | null>(null)
-  const [cover, setCover] = useState<UploadResponse | null>(null)
-  const [contentImages, setContentImages] = useState<UploadResponse[]>([])
+  const [cover, setCover] = useState<ArticleImageUploadResponse | null>(null)
+  const [contentImages, setContentImages] = useState<ArticleImageUploadResponse[]>([])
   const [editorMode, setEditorMode] = useState<'edit' | 'preview' | 'split'>('edit')
-  const [busy, setBusy] = useState<'cover' | 'content' | 'publish' | ''>('')
+  const [busy, setBusy] = useState<'cover' | 'content' | 'publish' | 'draft' | ''>('')
   const [notice, setNotice] = useState('')
+  const [editingArticle, setEditingArticle] = useState<Article | null>(() => readEditingArticle())
   const [cropUrl, setCropUrl] = useState<string | null>(null)
   const [cropFile, setCropFile] = useState<File | null>(null)
   const [cropSize, setCropSize] = useState<ImageSize | null>(null)
@@ -50,6 +54,21 @@ export default function CreateArticleView() {
       setCategoryGroups(types.map((type, index) => ({ type, categories: groups[index].categories ?? [] })))
     }).catch((error: unknown) => { logRequestError('加载文章分类失败', error); setNotice('加载分类失败，请稍后重试') })
   }, [])
+
+  useEffect(() => {
+    if (!editingArticle) return
+    setTitle(editingArticle.title ?? '')
+    setSummary(editingArticle.summary ?? '')
+    setContent(editingArticle.content ?? '')
+    setCategoryID(editingArticle.categoryID ?? 0)
+    setCover(editingArticle.coverImage ? { url: editingArticle.coverImage } : null)
+  }, [editingArticle])
+
+  useEffect(() => {
+    if (!editingArticle || !categoryGroups.length) return
+    const group = categoryGroups.find((item) => item.categories.some((category) => category.id === editingArticle.categoryID))
+    if (group) setCategoryTypeID(group.type.id)
+  }, [categoryGroups, editingArticle])
 
   useEffect(() => () => { if (cropUrl) URL.revokeObjectURL(cropUrl) }, [cropUrl])
 
@@ -138,7 +157,7 @@ export default function CreateArticleView() {
       const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.9))
       if (!blob) throw new Error('图片裁剪失败，请重试')
       const name = `${cropFile.name.replace(/\.[^.]+$/, '') || 'cover'}-cover.jpg`
-      setCover(await storageApi.uploadCover(new File([blob], name, { type: 'image/jpeg' })))
+      setCover(await articleApi.uploadCover(new File([blob], name, { type: 'image/jpeg' })))
       setNotice('封面已上传')
       closeCrop()
     } catch (error) { logRequestError('上传封面失败', error); setNotice('上传封面失败，请稍后重试') } finally { setBusy('') }
@@ -148,7 +167,7 @@ export default function CreateArticleView() {
     if (!file) return
     try {
       setBusy('content')
-      const result = await storageApi.uploadContent(file)
+      const result = await articleApi.uploadContent(file)
       const textarea = editorRef.current
       const start = textarea?.selectionStart ?? content.length
       const markdown = `\n![${file.name}](${result.url})\n`
@@ -158,24 +177,46 @@ export default function CreateArticleView() {
     } catch (error) { logRequestError('上传正文图片失败', error); setNotice('上传图片失败，请稍后重试') } finally { setBusy('') }
   }
 
-  const removeContentImage = async (image: UploadResponse) => {
-    try {
-      await storageApi.delete({ key: image.key })
-      setContent((current) => current.replace(new RegExp(`!?\\[[^\\]]*\\]\\(${image.url.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}\\)\\n?`, 'g'), ''))
-      setContentImages((current) => current.filter((item) => item.key !== image.key))
-      setNotice('正文图片已删除')
-    } catch (error) { logRequestError('删除正文图片失败', error); setNotice('删除图片失败，请稍后重试') }
+  const removeContentImage = (image: ArticleImageUploadResponse) => {
+    setContent((current) => current.replace(new RegExp(`!?\\[[^\\]]*\\]\\(${image.url.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}\\)\\n?`, 'g'), ''))
+    setContentImages((current) => current.filter((item) => item.url !== image.url))
+    setNotice('正文图片已从作品中移除')
+  }
+
+  const resetForm = () => {
+    setTitle('')
+    setSummary('')
+    setContent('')
+    setCategoryID(0)
+    setCategoryTypeID(0)
+    setCover(null)
+    setContentImages([])
+    setEditingArticle(null)
+    window.history.replaceState({}, '', window.location.pathname)
   }
 
   const publish = async () => {
     if (!title.trim() || !content.trim() || !categoryID) { setNotice('请填写标题、正文并选择分类'); return }
     try {
       setBusy('publish')
-      const result = await articleApi.create({ title: title.trim(), summary: summary.trim(), content, coverImage: cover?.url, categoryID })
+      const payload = { title: title.trim(), summary: summary.trim(), content, coverImage: cover?.url, categoryID, isPublish: true }
+      const result = editingArticle && !editingArticle.isPublished ? await articleApi.publishDraft({ id: editingArticle.id }) : editingArticle ? await articleApi.edit({ ...payload, id: editingArticle.id }) : await articleApi.create(payload)
       if (!result.success) throw new Error('作品发布失败')
-      setTitle(''); setSummary(''); setContent(''); setCategoryID(0); setCategoryTypeID(0); setCover(null); setContentImages([])
-      setNotice('作品已发布')
+      resetForm()
+      setNotice(editingArticle ? '作品已更新并发布' : '作品已发布')
     } catch (error) { logRequestError('发布作品失败', error); setNotice('发布失败，请稍后重试') } finally { setBusy('') }
+  }
+
+  const saveDraft = async () => {
+    if (!title.trim() || !content.trim() || !categoryID) { setNotice('请填写标题、正文并选择分类后再保存草稿'); return }
+    try {
+      setBusy('draft')
+      const payload = { title: title.trim(), summary: summary.trim(), content, coverImage: cover?.url, categoryID, isPublish: false }
+      const result = editingArticle ? await articleApi.edit({ ...payload, id: editingArticle.id }) : await articleApi.saveDraft(payload)
+      if (!result.success) throw new Error('保存草稿失败')
+      resetForm()
+      setNotice(editingArticle ? '草稿已更新' : '已保存至草稿箱')
+    } catch (error) { logRequestError('保存草稿失败', error); setNotice('保存草稿失败，请稍后重试') } finally { setBusy('') }
   }
 
   const jumpToHeading = (index: number) => {
@@ -199,7 +240,7 @@ export default function CreateArticleView() {
     {notice && <div className="editor-notice" role="status">{notice}<button type="button" aria-label="关闭提示" onClick={() => setNotice('')}>×</button></div>}
     <div className="editor-layout">
       <main className="editor-canvas">
-        <div className="editor-title-row"><div><span>CREATOR CENTER</span><h2>创作</h2></div><div className="editor-status"><i />未发布</div></div>
+        <div className="editor-title-row"><div><span>CREATOR CENTER</span><h2>{editingArticle ? '编辑作品' : '投稿'}</h2></div><div className="editor-status"><i />{editingArticle ? (editingArticle.isPublished ? '编辑已发布作品' : '编辑草稿') : '未发布'}</div></div>
         <label className="editor-field"><span>作品标题</span><input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="输入一个清晰的标题" maxLength={120} /></label>
         <div className="markdown-editor"><div className="editor-toolbar"><div className="mode-switch"><button type="button" className={editorMode === 'edit' ? 'active' : ''} onClick={() => setEditorMode('edit')}>编辑</button><button type="button" className={editorMode === 'preview' ? 'active' : ''} onClick={() => setEditorMode('preview')}>预览</button><button type="button" className={editorMode === 'split' ? 'active' : ''} onClick={() => setEditorMode('split')}>分栏</button></div><label className="image-insert"><input type="file" accept="image/jpeg,image/png,image/gif,image/webp,image/avif" onChange={(event) => { void uploadContentImage(event.target.files?.[0]); event.currentTarget.value = '' }} disabled={busy !== ''} />{busy === 'content' ? '上传中...' : '插入图片'}</label></div>{editorMode === 'preview' ? <ArticlePreview content={content} /> : editorMode === 'split' ? <div className="editor-split"><textarea ref={editorRef} className="markdown-input" value={content} onChange={(event) => setContent(event.target.value)} placeholder="从这里开始写作..." /><ArticlePreview content={content} /></div> : <textarea ref={editorRef} className="markdown-input" value={content} onChange={(event) => setContent(event.target.value)} placeholder={'从这里开始写作...\n\n## 第一个章节\n\n支持 Markdown，也可以通过右上角插入图片。'} />}</div>
         <section className="article-details" aria-label="文章发布信息">
@@ -208,11 +249,11 @@ export default function CreateArticleView() {
             <div className="details-row media-row"><div className="details-label"><span>添加封面</span><small>16:9，可裁剪</small></div><div className="details-control media-controls"><label className={cover ? 'compact-cover has-cover' : 'compact-cover'}>{cover ? <img src={cover.url} alt="作品封面预览" /> : <div><b>+</b><span>从本地上传</span></div>}<input type="file" accept="image/jpeg,image/png,image/gif,image/webp,image/avif" onChange={(event) => { openCrop(event.target.files?.[0]); event.currentTarget.value = '' }} disabled={busy !== ''} /><em>{cover ? '重新裁剪' : '选择图片'}</em></label></div></div>
             <label className="details-row"><span className="details-label">作品摘要</span><span className="details-control"><textarea className="summary-input" value={summary} onChange={(event) => setSummary(event.target.value)} placeholder="用一两句话概括作品内容（可选）" maxLength={240} /></span></label>
             <div className="details-row"><span className="details-label">作品分类</span><div className="details-control category-selects" ref={categorySelectsRef}><div className="category-select"><span>一级分类</span><button type="button" aria-haspopup="listbox" aria-expanded={openCategoryMenu === 'type'} onClick={() => setOpenCategoryMenu((current) => current === 'type' ? null : 'type')}>{categoryGroups.find((group) => group.type.id === categoryTypeID)?.type.name ?? '选择一级分类'}<i aria-hidden="true" /></button>{openCategoryMenu === 'type' && <div className="category-select-menu" role="listbox">{categoryGroups.length ? categoryGroups.map((group) => <button type="button" role="option" aria-selected={group.type.id === categoryTypeID} className={group.type.id === categoryTypeID ? 'selected' : ''} key={group.type.id} onClick={() => { setCategoryTypeID(group.type.id); setCategoryID(0); setOpenCategoryMenu(null) }}>{group.type.name}</button>) : <p>暂无一级分类</p>}</div>}</div><div className="category-select"><span>二级分类</span><button type="button" disabled={!categoryTypeID} aria-haspopup="listbox" aria-expanded={openCategoryMenu === 'category'} onClick={() => setOpenCategoryMenu((current) => current === 'category' ? null : 'category')}>{categoryGroups.find((group) => group.type.id === categoryTypeID)?.categories.find((item) => item.id === categoryID)?.name ?? (categoryTypeID ? '选择二级分类' : '请先选择一级分类')}<i aria-hidden="true" /></button>{openCategoryMenu === 'category' && <div className="category-select-menu" role="listbox">{categoryGroups.find((group) => group.type.id === categoryTypeID)?.categories.length ? categoryGroups.find((group) => group.type.id === categoryTypeID)?.categories.map((item) => <button type="button" role="option" aria-selected={item.id === categoryID} className={item.id === categoryID ? 'selected' : ''} key={item.id} onClick={() => { setCategoryID(item.id); setOpenCategoryMenu(null) }}>{item.name}</button>) : <p>暂无二级分类</p>}</div>}</div></div></div>
-            <div className="details-row publish-row"><span className="details-label">发布作品</span><div className="details-control detail-publish"><div className="article-metrics"><span>{wordCount}<small>字</small></span><span>{headings.length}<small>章节</small></span><span>{contentImages.length}<small>图片</small></span></div><button className="publish-button" type="button" disabled={busy !== ''} onClick={() => void publish()}>{busy === 'publish' ? '正在发布...' : '发布作品'}</button></div></div>
+            <div className="details-row publish-row"><span className="details-label">发布作品</span><div className="details-control detail-publish"><div className="article-metrics"><span>{wordCount}<small>字</small></span><span>{headings.length}<small>章节</small></span><span>{contentImages.length}<small>图片</small></span></div><div className="publish-actions"><button className="draft-button" type="button" disabled={busy !== ''} onClick={() => void saveDraft()}>{busy === 'draft' ? '正在保存...' : editingArticle ? '更新为草稿' : '保存至草稿箱'}</button><button className="publish-button" type="button" disabled={busy !== ''} onClick={() => void publish()}>{busy === 'publish' ? '正在发布...' : editingArticle ? '更新并发布' : '发布作品'}</button></div></div></div>
           </div>
         </section>
       </main>
-      <aside className="editor-aside"><nav className="toc-panel" aria-label="文章目录"><div className="aside-heading"><span>OUTLINE</span><h3>文章目录</h3></div>{headings.length ? headings.map((heading, index) => <button type="button" key={`${heading.index}-${index}`} className={`toc-level-${heading.level}`} onClick={() => jumpToHeading(heading.index)}><i>{String(index + 1).padStart(2, '0')}</i>{heading.text}</button>) : <p>使用 `#`、`##` 或 `###` 标题后，目录会自动生成。</p>}</nav><section className="article-images-panel" aria-label="文章图片"><div className="aside-heading"><span>ARTICLE IMAGES</span><h3>文章图片</h3></div>{contentImages.length ? <div>{contentImages.map((image) => <article key={image.key}><img src={image.url} alt="正文上传图片" /><button type="button" aria-label="删除图片" onClick={() => void removeContentImage(image)}>×</button></article>)}</div> : <p>通过编辑器右上角插入的图片会显示在这里。</p>}</section></aside>
+      <aside className="editor-aside"><nav className="toc-panel" aria-label="文章目录"><div className="aside-heading"><span>OUTLINE</span><h3>文章目录</h3></div>{headings.length ? headings.map((heading, index) => <button type="button" key={`${heading.index}-${index}`} className={`toc-level-${heading.level}`} onClick={() => jumpToHeading(heading.index)}><i>{String(index + 1).padStart(2, '0')}</i>{heading.text}</button>) : <p>使用 `#`、`##` 或 `###` 标题后，目录会自动生成。</p>}</nav><section className="article-images-panel" aria-label="文章图片"><div className="aside-heading"><span>ARTICLE IMAGES</span><h3>文章图片</h3></div>{contentImages.length ? <div>{contentImages.map((image) => <article key={image.url}><img src={image.url} alt="正文上传图片" /><button type="button" aria-label="删除图片" onClick={() => removeContentImage(image)}>×</button></article>)}</div> : <p>通过编辑器右上角插入的图片会显示在这里。</p>}</section></aside>
     </div>
     {cropUrl && <div className="crop-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && busy !== 'cover') closeCrop() }}><section className="crop-modal" role="dialog" aria-modal="true" aria-labelledby="crop-title"><header><div><span>IMAGE EDITOR</span><h3 id="crop-title">图片编辑</h3></div><button type="button" aria-label="关闭图片编辑" disabled={busy === 'cover'} onClick={closeCrop}>×</button></header><div className="crop-workspace"><div className="crop-stage" ref={cropStageRef} onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={finishDrag} onPointerCancel={finishDrag}><img ref={cropImageRef} src={cropUrl} alt="待裁剪封面" draggable={false} style={imageStyle} onLoad={(event) => { const image = event.currentTarget; setCropSize({ width: image.naturalWidth, height: image.naturalHeight }) }} /></div><div className="crop-side"><span>封面预览</span><div className="crop-preview" ref={cropPreviewRef}><img src={cropUrl} alt="封面裁剪预览" style={previewImageStyle} /></div><div className="zoom-controls"><span>缩放</span><div><button type="button" aria-label="缩小图片" onClick={() => changeCropScale(-0.1)} disabled={cropScale <= 0.7}>−</button><output>{Math.round(cropScale * 100)}%</output><button type="button" aria-label="放大图片" onClick={() => changeCropScale(0.1)} disabled={cropScale >= 2.5}>+</button></div></div></div></div><footer><p>拖动图片调整位置，裁剪区域固定为 16:9。</p><div><button type="button" className="crop-cancel" disabled={busy === 'cover'} onClick={closeCrop}>取消</button><button type="button" className="crop-confirm" disabled={!cropSize || busy === 'cover'} onClick={() => void confirmCover()}>{busy === 'cover' ? '上传中...' : '确认上传'}</button></div></footer></section></div>}
   </section>

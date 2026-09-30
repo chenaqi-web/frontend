@@ -39,6 +39,7 @@ export interface ManagedUser {
   avatar: string
   sex: string
   birthday: string
+  signature: string
   role: string
   status: 'approved' | 'blocked'
 }

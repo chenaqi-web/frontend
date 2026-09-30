@@ -122,7 +122,7 @@ export default function ProfileView({ userID, publicView = false, hideHeader = f
   const [profile, setProfile] = useState<CurrentUser>(() => publicView ? emptyProfile : { ...emptyProfile, ...readCurrentUser() })
   const [articles, setArticles] = useState<Article[]>([])
   const [likedArticles, setLikedArticles] = useState<Article[]>([])
-  const [activeTab, setActiveTab] = useState<ProfileTab>('home')
+  const [activeTab, setActiveTab] = useState<ProfileTab>(publicView ? 'submissions' : 'home')
   const [viewMode, setViewMode] = useState<ProfileViewMode>(publicView ? 'visitor' : 'owner')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -156,38 +156,63 @@ export default function ProfileView({ userID, publicView = false, hideHeader = f
     ]
   }, [articleCount, favoriteCount, likedArticles.length, profile.role, viewMode])
 
+  const loadVisitorProfile = async (targetID: number) => {
+    const user = await userApi.getPublicProfile(targetID)
+    setProfile({ ...emptyProfile, ...user })
+    setLikedArticles([])
+    setViewMode('visitor')
+    const userArticles = await articleApi.listByUser({ authorID: targetID, page: 1, pageSize: 50 }, null).catch((error) => {
+      logRequestError('加载用户投稿失败', error)
+      return { articles: [] }
+    })
+    setArticles(userArticles.articles ?? [])
+  }
+
+  const showVisitorPreview = async () => {
+    const targetID = Number(readCurrentUser()?.id ?? profile.id ?? 0)
+    setActiveTab('submissions')
+    if (!targetID) {
+      setViewMode('visitor')
+      return
+    }
+    try {
+      setLoading(true)
+      await loadVisitorProfile(targetID)
+    } catch (error) {
+      logRequestError('加载访客视角失败', error)
+      setNotice({ message: '访客视角加载失败，请稍后重试。', type: 'error' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadOwnerProfile = async () => {
+    const user = await userApi.getProfile()
+    setProfile(user)
+    saveCurrentUser(user)
+    const [myArticles, likes] = await Promise.all([
+      articleApi.listByUser({ authorID: user.id, page: 1, pageSize: 50 }).catch((error) => {
+        logRequestError('加载我的投稿失败', error)
+        return { articles: [] }
+      }),
+      likeApi.list({ objectType: 'article', page: 1, pageSize: 50 }).catch((error) => {
+        logRequestError('加载点赞列表失败', error)
+        return { articles: [], total: 0 }
+      }),
+    ])
+    setArticles(myArticles.articles ?? [])
+    setLikedArticles(likes.articles ?? [])
+  }
+
   useEffect(() => {
     const load = async () => {
       try {
         setLoading(true)
         if (canLoadPublicProfile && userID) {
-          const user = await userApi.getPublicProfile(userID)
-          setProfile({ ...emptyProfile, ...user })
-          setLikedArticles([])
-          setViewMode('visitor')
-          const userArticles = await articleApi.listByUser({ authorID: userID, page: 1, pageSize: 50 }, null).catch((error) => {
-            logRequestError('加载用户投稿失败', error)
-            return { articles: [] }
-          })
-          setArticles(userArticles.articles ?? [])
+          await loadVisitorProfile(userID)
           return
         }
-
-        const user = await userApi.getProfile()
-        setProfile(user)
-        saveCurrentUser(user)
-        const [myArticles, likes] = await Promise.all([
-          articleApi.listByUser({ page: 1, pageSize: 50 }).catch((error) => {
-            logRequestError('加载我的投稿失败', error)
-            return { articles: [] }
-          }),
-          likeApi.list({ objectType: 'article', page: 1, pageSize: 50 }).catch((error) => {
-            logRequestError('加载点赞列表失败', error)
-            return { articles: [], total: 0 }
-          }),
-        ])
-        setArticles(myArticles.articles ?? [])
-        setLikedArticles(likes.articles ?? [])
+        await loadOwnerProfile()
       } catch (error) {
         logRequestError(canLoadPublicProfile ? '加载用户主页失败' : '加载个人中心失败', error)
         setNotice({ message: canLoadPublicProfile ? '用户主页加载失败，请稍后重试。' : '个人中心加载失败，当前显示本地信息。', type: 'error' })
@@ -259,6 +284,24 @@ export default function ProfileView({ userID, publicView = false, hideHeader = f
     }
   }
 
+  const backToOwner = async () => {
+    if (viewMode === 'owner') {
+      setActiveTab('home')
+      return
+    }
+    setViewMode('owner')
+    setActiveTab('home')
+    try {
+      setLoading(true)
+      await loadOwnerProfile()
+    } catch (error) {
+      logRequestError('切回本人主页失败', error)
+      setNotice({ message: '本人主页加载失败，请稍后重试。', type: 'error' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const renderWorks = (items: Article[], emptyTitle: string, emptyText: string) => loading
     ? <div className="space-empty">正在加载...</div>
     : items.length
@@ -275,15 +318,16 @@ export default function ProfileView({ userID, publicView = false, hideHeader = f
         <label className={`space-avatar${canEditProfile ? ' editable' : ''}`}>{profile.avatar ? <img src={resolveStorageUrl(profile.avatar)} alt="当前头像" /> : <span>{(profile.username || 'U').slice(0, 1).toUpperCase()}</span>}{canEditProfile && <input type="file" accept="image/jpeg,image/png,image/gif,image/webp,image/avif" disabled={uploading} onChange={(event) => void uploadAvatar(event.target.files?.[0])} />}</label>
         <div className="space-identity"><div><h1>{profile.username || '未设置用户名'}</h1></div><p>{profile.signature || '这个用户还没有留下个性签名'}</p></div>
       </div>
-      {!publicView && <div className="space-view-switch" aria-label="视角切换"><button type="button" className={viewMode === 'owner' ? 'active' : ''} onClick={() => setViewMode('owner')}>本人视角</button><button type="button" className={viewMode === 'visitor' ? 'active' : ''} onClick={() => setViewMode('visitor')}>访客视角</button></div>}
+      {!publicView && <div className="space-view-switch" aria-label="视角切换"><button type="button" className={viewMode === 'owner' ? 'active' : ''} onClick={() => void backToOwner()}>本人视角</button><button type="button" className={viewMode === 'visitor' ? 'active' : ''} onClick={() => void showVisitorPreview()}>访客视角</button></div>}
     </header>
-    <nav className="space-tabs" aria-label="个人中心导航">{tabs.map((item) => <button key={item.id} type="button" className={activeTab === item.id ? 'active' : ''} onClick={() => item.id === 'admin' ? navigate('/admin/blog') : setActiveTab(item.id)}><SpaceTabIcon tab={item.id} /><span>{item.label}</span>{typeof item.count === 'number' && <small>{formatCount(item.count)}</small>}</button>)}<div className="space-stats"><span><b>{formatCount(followCount)}</b>关注</span><span><b>{formatCount(followerCount)}</b>粉丝</span><span><b>{formatCount(totalLikes)}</b>获赞</span>{!publicView && <span><b>{formatCount(totalViews)}</b>阅读</span>}</div></nav>
+    <nav className="space-tabs" aria-label="个人中心导航">{tabs.map((item) => <button key={item.id} type="button" className={activeTab === item.id ? 'active' : ''} onClick={() => item.id === 'admin' ? navigate('/admin/blog') : setActiveTab(item.id)}><SpaceTabIcon tab={item.id} /><span>{item.label}</span>{typeof item.count === 'number' && <small>{formatCount(item.count)}</small>}</button>)}<div className="space-stats"><span><b>{formatCount(followCount)}</b>关注</span><span><b>{formatCount(followerCount)}</b>粉丝</span><span><b>{formatCount(totalLikes)}</b>获赞</span>{viewMode === 'owner' && <span><b>{formatCount(totalViews)}</b>阅读</span>}</div></nav>
     <div className="space-body">
       <main className="space-main">
-        {activeTab === 'home' && <>
+        {activeTab === 'home' && viewMode === 'owner' && <>
           <section className="space-pinned"><div className="space-mascot" aria-hidden="true">R</div><div><h2>{viewMode === 'owner' ? '置顶你的代表作品' : '代表作品'}</h2><p>{viewMode === 'owner' ? '选择最想展示给访客的投稿，让大家第一眼看到你的创作。' : '这里会展示用户最想被看见的作品。'}</p></div>{viewMode === 'owner' && <div className="space-inline-actions"><button type="button" onClick={() => navigate('/admin/create')}>发布作品</button><button type="button" onClick={() => navigate('/admin/my-articles')}>内容管理</button></div>}</section>
           <section className="space-section"><header><div><h2>最近投稿</h2><span>{formatCount(articleCount)} 个作品</span></div><button type="button" onClick={() => setActiveTab('submissions')}>查看更多</button></header>{renderWorks(articles.slice(0, 6), '还没有投稿', viewMode === 'owner' ? '去创作中心发布第一篇作品吧。' : '这个用户还没有公开作品。')}</section>
         </>}
+        {activeTab === 'home' && viewMode === 'visitor' && <section className="space-section"><header><div><h2>投稿</h2><span>{formatCount(articleCount)} 个作品</span></div></header>{renderWorks(articles, '还没有投稿', '发布后的作品会出现在这里。')}</section>}
         {activeTab === 'likes' && <section className="space-section"><header><div><h2>点赞</h2><span>{likedArticles.length} 条记录</span></div></header>{renderWorks(likedArticles, '还没有点赞内容', viewMode === 'owner' ? '点过赞的作品会出现在这里。' : '访客暂时看不到更多点赞内容。')}</section>}
         {activeTab === 'favorites' && <section className="space-section"><header><div><h2>收藏</h2><span>{formatCount(favoriteCount)} 个收藏</span></div></header><div className="space-empty"><strong>收藏功能待开放</strong><span>后端返回收藏数后，这里会展示收藏夹列表。</span></div></section>}
         {activeTab === 'submissions' && <section className="space-section"><header><div><h2>投稿</h2><span>{formatCount(articleCount)} 个作品</span></div>{viewMode === 'owner' && <button type="button" onClick={() => navigate('/admin/create')}>发布作品</button>}</header>{renderWorks(articles, '还没有投稿', '发布后的作品会出现在这里。')}</section>}

@@ -7,11 +7,14 @@ export interface Article {
   authorID: number
   categoryID: number
   isTop: boolean
+  isPublished: boolean
   viewCount: number
   likeCount: number
+  favorCount: number
   commentCount: number
   createdAt: number
   updatedAt: number
+  publishedAt: number
   authorName: string
   authorAvatar: string
 }
@@ -31,6 +34,7 @@ export interface SearchArticlesRequest extends ListArticlesRequest {
 
 export interface ListArticlesResponse {
   articles: Article[]
+  total?: number
 }
 
 export interface CreateArticleRequest {
@@ -40,12 +44,18 @@ export interface CreateArticleRequest {
   coverImage?: string
   categoryID: number
   isTop?: boolean
+  isPublish?: boolean
   /** 由服务端�?token 注入，无需传�?*/
   authorID?: number
 }
 
+export interface EditArticleRequest extends CreateArticleRequest {
+  id: number
+}
+
 export interface ListMyArticlesRequest extends ListArticlesRequest {
   authorID?: number
+  isPublished?: boolean
 }
 
 export interface GetArticleRequest {
@@ -62,6 +72,23 @@ export interface DeleteArticleRequest {
   authorID?: number
 }
 
+export interface PublishDraftRequest {
+  id: number
+}
+
+export interface DeleteDraftRequest {
+  id: number
+}
+
 export interface ArticleBoolResponse {
   success: boolean
+}
+
+export interface EditArticleResponse {
+  success: boolean
+  articleID: number
+}
+
+export interface ArticleImageUploadResponse {
+  url: string
 }
