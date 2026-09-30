@@ -18,7 +18,7 @@ export default function AdminSidebar({ tab, role, mode = 'full', onChange }: { t
 
   return (
     <aside className="admin-sidebar">
-      <div className="admin-brand"><span className="admin-brand-mark">R</span><div><b>RenaiTeam</b><small>{subtitle}</small></div></div>
+      <div className="admin-brand"><span className="admin-brand-mark">C</span><div><b>CCEBD</b><small>{subtitle}</small></div></div>
       <nav className="admin-menu" aria-label="后台导航">
         {groups.map((group) => {
           const open = mode === 'system' || mode === 'creator' || (expanded[group.label] ?? false)
@@ -29,7 +29,7 @@ export default function AdminSidebar({ tab, role, mode = 'full', onChange }: { t
           </div>
         })}
       </nav>
-      <div className="admin-sidebar-footer"><div className="footer-line"><span className="status-dot" />系统运行正常</div><small>RenaiTeam · 2026</small></div>
+      <div className="admin-sidebar-footer"><div className="footer-line"><span className="status-dot" />系统运行正常</div><small>CCEBD · 2026</small></div>
     </aside>
   )
 }

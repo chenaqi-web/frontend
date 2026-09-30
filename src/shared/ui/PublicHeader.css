@@ -28,7 +28,6 @@
 }
 
 .public-header.transparent .public-brand,
-.public-header.transparent .public-brand small,
 .public-header.transparent .public-nav a,
 .public-header.transparent .public-action,
 .public-header.transparent .public-login {
@@ -82,7 +81,6 @@
   box-shadow: none;
 }
 
-.public-header.transparent.is-scrolled .public-brand small,
 .public-header.transparent.is-scrolled .public-nav a:hover,
 .public-header.transparent.is-scrolled .public-nav a.active {
   color: #258fce;
@@ -96,22 +94,18 @@
 
 .public-brand {
   display: flex;
-  align-items: baseline;
-  gap: 6px;
+  align-items: center;
+  width: 118px;
+  height: 44px;
   color: #1d2a38;
   text-decoration: none;
 }
 
-.public-brand strong {
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: .01em;
-}
-
-.public-brand small {
-  color: #258fce;
-  font-size: 10px;
-  font-weight: 800;
+.public-brand img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .public-nav {
@@ -359,12 +353,9 @@
     padding: 10px 14px;
   }
 
-  .public-brand small {
-    display: none;
-  }
-
-  .public-brand strong {
-    font-size: 19px;
+  .public-brand {
+    width: 96px;
+    height: 36px;
   }
 
   .public-search {

@@ -140,21 +140,10 @@ export default function ProfileView({ userID, publicView = false, hideHeader = f
   const followCount = readCount(profileCounts, ['following_count', 'follow_count', 'followCount'])
   const followerCount = readCount(profileCounts, ['followers_count', 'follower_count', 'followerCount'])
   const articleCount = readCount(profileCounts, ['article_count']) || articles.length
-  const likeCount = readCount(profileCounts, ['like_count'])
   const totalLikes = readCount(profileCounts, ['receive_like_count']) || articles.reduce((sum, item) => sum + (item.likeCount ?? 0), 0)
-  const receiveFavorCount = readCount(profileCounts, ['receive_favor_count'])
   const totalViews = useMemo(() => articles.reduce((sum, item) => sum + (item.viewCount ?? 0), 0), [articles])
   const selectedBirthday = useMemo(() => getBirthdayDate(profile.birthday), [profile.birthday])
   const birthdayDays = useMemo(() => getCalendarDays(birthdayMonth), [birthdayMonth])
-  const publicBirthday = normalizeBirthday(profile.birthday).replaceAll('-', '/') || '未设置'
-  const publicMetrics = [
-    { label: '关注', value: followCount },
-    { label: '粉丝', value: followerCount },
-    { label: '点赞', value: likeCount },
-    { label: '获赞', value: totalLikes },
-    { label: '收藏', value: favoriteCount },
-    { label: '获藏', value: receiveFavorCount },
-  ]
   const tabs = useMemo(() => {
     const ownerOnly = viewMode === 'owner'
     return [
@@ -284,7 +273,7 @@ export default function ProfileView({ userID, publicView = false, hideHeader = f
       <div className="space-hero-bg" />
       <div className="space-profile">
         <label className={`space-avatar${canEditProfile ? ' editable' : ''}`}>{profile.avatar ? <img src={resolveStorageUrl(profile.avatar)} alt="当前头像" /> : <span>{(profile.username || 'U').slice(0, 1).toUpperCase()}</span>}{canEditProfile && <input type="file" accept="image/jpeg,image/png,image/gif,image/webp,image/avif" disabled={uploading} onChange={(event) => void uploadAvatar(event.target.files?.[0])} />}</label>
-        <div className="space-identity"><div><h1>{profile.username || '未设置用户名'}</h1><span>{profile.role === 'admin' ? '管理员' : '社团成员'}</span></div><p>{profile.signature || '这个用户还没有留下个性签名'}</p></div>
+        <div className="space-identity"><div><h1>{profile.username || '未设置用户名'}</h1></div><p>{profile.signature || '这个用户还没有留下个性签名'}</p></div>
       </div>
       {!publicView && <div className="space-view-switch" aria-label="视角切换"><button type="button" className={viewMode === 'owner' ? 'active' : ''} onClick={() => setViewMode('owner')}>本人视角</button><button type="button" className={viewMode === 'visitor' ? 'active' : ''} onClick={() => setViewMode('visitor')}>访客视角</button></div>}
     </header>
@@ -292,7 +281,7 @@ export default function ProfileView({ userID, publicView = false, hideHeader = f
     <div className="space-body">
       <main className="space-main">
         {activeTab === 'home' && <>
-          {publicView ? <section className="space-public-card"><header><div><span>PUBLIC PROFILE</span><h2>公开资料</h2></div><strong>用户 ID：{profile.id || userID}</strong></header><div className="space-public-fields"><span><b>性别</b>{sexLabel(profile.sex)}</span><span><b>生日</b>{publicBirthday}</span><span><b>个性签名</b>{profile.signature || '这个用户还没有留下个性签名'}</span></div><div className="space-public-metrics">{publicMetrics.map((item) => <span key={item.label}><b>{formatCount(item.value)}</b>{item.label}</span>)}</div></section> : <section className="space-pinned"><div className="space-mascot" aria-hidden="true">R</div><div><h2>{viewMode === 'owner' ? '置顶你的代表作品' : '代表作品'}</h2><p>{viewMode === 'owner' ? '选择最想展示给访客的投稿，让大家第一眼看到你的创作。' : '这里会展示用户最想被看见的作品。'}</p></div>{viewMode === 'owner' && <div className="space-inline-actions"><button type="button" onClick={() => navigate('/admin/create')}>发布作品</button><button type="button" onClick={() => navigate('/admin/my-articles')}>内容管理</button></div>}</section>}
+          <section className="space-pinned"><div className="space-mascot" aria-hidden="true">R</div><div><h2>{viewMode === 'owner' ? '置顶你的代表作品' : '代表作品'}</h2><p>{viewMode === 'owner' ? '选择最想展示给访客的投稿，让大家第一眼看到你的创作。' : '这里会展示用户最想被看见的作品。'}</p></div>{viewMode === 'owner' && <div className="space-inline-actions"><button type="button" onClick={() => navigate('/admin/create')}>发布作品</button><button type="button" onClick={() => navigate('/admin/my-articles')}>内容管理</button></div>}</section>
           <section className="space-section"><header><div><h2>最近投稿</h2><span>{formatCount(articleCount)} 个作品</span></div><button type="button" onClick={() => setActiveTab('submissions')}>查看更多</button></header>{renderWorks(articles.slice(0, 6), '还没有投稿', viewMode === 'owner' ? '去创作中心发布第一篇作品吧。' : '这个用户还没有公开作品。')}</section>
         </>}
         {activeTab === 'likes' && <section className="space-section"><header><div><h2>点赞</h2><span>{likedArticles.length} 条记录</span></div></header>{renderWorks(likedArticles, '还没有点赞内容', viewMode === 'owner' ? '点过赞的作品会出现在这里。' : '访客暂时看不到更多点赞内容。')}</section>}

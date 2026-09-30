@@ -65,7 +65,7 @@ export default function PublicHeader({ pathname, overlay = false, scrolled = fal
   }
 
   return <header className={`public-header${transparent ? ' transparent' : ''}${scrolled ? ' is-scrolled' : ''}`}>
-    <AppLink className="public-brand" to="/"><strong>Renai</strong><small>TEAM</small></AppLink>
+    <AppLink className="public-brand" to="/"><img src="/ccebd.png" alt="CCEBD" /></AppLink>
     <nav className="public-nav" aria-label="主导航">{navItems.map((item) => <AppLink key={item.to} className={isActive(item.to) ? 'active' : ''} to={item.to}><PublicIcon name={item.icon} /><span>{item.label}</span></AppLink>)}</nav>
     <form className="public-search" role="search" onSubmit={submitSearch}><PublicIcon name="search" /><input value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder="搜索技术文章、笔记、源码" aria-label="搜索博客" /><button type="submit">搜索</button></form>
     <div className="public-actions">

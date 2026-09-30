@@ -11,5 +11,5 @@ export default function UserProfilePage() {
     </main>
   }
 
-  return <ProfileView userID={userID} publicView hideHeader />
+  return <ProfileView userID={userID} publicView />
 }
