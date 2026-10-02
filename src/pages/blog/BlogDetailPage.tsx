@@ -70,6 +70,13 @@ export default function BlogDetailPage() {
     }
   }
 
+  const loadReplies = async (rootID: number) => {
+    const result = await commentApi.replies({ parentId: rootID, page: 1, size: 50 })
+    const nextReplies = result.replies ?? []
+    setReplies((current) => ({ ...current, [rootID]: nextReplies }))
+    return nextReplies
+  }
+
   useEffect(() => {
     if (!articleID) {
       setLoading(false)
@@ -77,15 +84,13 @@ export default function BlogDetailPage() {
     }
     if (loadedArticleID.current !== articleID) {
       loadedArticleID.current = articleID
-      void articleApi.detail({ id: articleID }).then((result) => setArticle(result.article)).catch((reason: unknown) => { logRequestError('加载文章详情失败', reason); setMessage('加载文章失败，请稍后重试') }).finally(() => setLoading(false))
+      void articleApi.detail({ id: articleID }).then((result) => {
+        setArticle(result.article)
+        setLiked(result.isLiked)
+      }).catch((reason: unknown) => { logRequestError('加载文章详情失败', reason); setMessage('加载文章失败，请稍后重试') }).finally(() => setLoading(false))
     }
     void loadComments()
-    if (loggedIn) {
-      void likeApi.list({ objectType: 'article', page: 1, pageSize: 100 })
-        .then((result) => setLiked((result.articles ?? []).some((item) => item.id === articleID)))
-        .catch(() => undefined)
-    }
-  }, [articleID, loggedIn])
+  }, [articleID])
 
   const headings = useMemo(() => article ? Array.from(article.content.matchAll(/^(#{1,3})\s+(.+)$/gm)).map((match) => ({ level: match[1].length, text: match[2].trim() })) : [], [article])
   const readingMinutes = useMemo(() => Math.max(1, Math.ceil((article?.content.replace(/[#*`_>\s]/g, '').length ?? 0) / 450)), [article])
@@ -118,8 +123,7 @@ export default function BlogDetailPage() {
     setExpandedReplies((current) => ({ ...current, [comment.id]: true }))
     if (replies[comment.id]) return
     try {
-      const result = await commentApi.replies({ parentId: comment.id, page: 1, size: 50 })
-      setReplies((current) => ({ ...current, [comment.id]: result.replies ?? [] }))
+      await loadReplies(comment.id)
     } catch (reason) {
       logRequestError('加载评论回复失败', reason)
       setMessage('加载回复失败，请稍后重试')
@@ -130,13 +134,16 @@ export default function BlogDetailPage() {
     event.preventDefault()
     if (!replyTarget || !replyText.trim()) return
     if (!loggedIn) return navigate('/login')
+    const rootID = replyTarget.rootId || replyTarget.id
     try {
       setSubmitting(true)
-      const result = await commentApi.reply({ articleId: articleID, parentId: replyTarget.rootId || replyTarget.id, replyToId: replyTarget.id, content: replyText.trim() })
+      const result = await commentApi.reply({ articleId: articleID, parentId: rootID, replyToId: replyTarget.id, content: replyText.trim() })
       if (!result.success) throw new Error('回复发布失败')
       setReplyText('')
       setReplyTarget(null)
-      await loadComments()
+      setExpandedReplies((current) => ({ ...current, [rootID]: true }))
+      await Promise.all([loadComments(), loadReplies(rootID)])
+      setMessage('回复已发布')
     } catch (reason) {
       logRequestError('发布回复失败', reason)
       setMessage('回复发布失败，请稍后重试')

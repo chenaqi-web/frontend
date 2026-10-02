@@ -64,6 +64,7 @@ export interface GetArticleRequest {
 
 export interface GetArticleResponse {
   article: Article
+  isLiked: boolean
 }
 
 export interface DeleteArticleRequest {

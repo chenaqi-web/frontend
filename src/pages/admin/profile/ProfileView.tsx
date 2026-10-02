@@ -108,12 +108,11 @@ function readCount(profile: ProfileCounts, keys: Array<keyof ProfileCounts>) {
   return 0
 }
 
-function ArticleCard({ article }: { article: Article }) {
+function ArticleCard({ article, showAuthor = false }: { article: Article; showAuthor?: boolean }) {
   return <article className="space-work-card" role="link" tabIndex={0} onClick={() => navigate(`/blog/${article.id}`)} onKeyDown={(event) => { if (event.key === 'Enter') navigate(`/blog/${article.id}`) }}>
     <div className="space-work-cover">{article.coverImage ? <img src={resolveStorageUrl(article.coverImage)} alt="" /> : <span>作品</span>}</div>
     <h3>{article.title || '未命名作品'}</h3>
-    <p>{article.summary || '作者还没有写简介。'}</p>
-    <footer><span>阅读 {formatCount(article.viewCount)}</span><span>点赞 {formatCount(article.likeCount)}</span></footer>
+    {showAuthor && <span className="space-work-author">{article.authorName || 'Renai 成员'}</span>}
   </article>
 }
 
@@ -122,7 +121,7 @@ export default function ProfileView({ userID, publicView = false, hideHeader = f
   const [profile, setProfile] = useState<CurrentUser>(() => publicView ? emptyProfile : { ...emptyProfile, ...readCurrentUser() })
   const [articles, setArticles] = useState<Article[]>([])
   const [likedArticles, setLikedArticles] = useState<Article[]>([])
-  const [activeTab, setActiveTab] = useState<ProfileTab>(publicView ? 'submissions' : 'home')
+  const [activeTab, setActiveTab] = useState<ProfileTab>('home')
   const [viewMode, setViewMode] = useState<ProfileViewMode>(publicView ? 'visitor' : 'owner')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -157,22 +156,29 @@ export default function ProfileView({ userID, publicView = false, hideHeader = f
   }, [articleCount, favoriteCount, likedArticles.length, profile.role, viewMode])
 
   const loadVisitorProfile = async (targetID: number) => {
-    const user = await userApi.getPublicProfile(targetID)
+    const [user, userArticles] = await Promise.all([
+      userApi.getPublicProfile(targetID),
+      articleApi.listByUser({ authorID: targetID, page: 1, pageSize: 50 }, null).catch((error) => {
+        logRequestError('加载用户投稿失败', error)
+        return { articles: [] }
+      }),
+    ])
     setProfile({ ...emptyProfile, ...user })
     setLikedArticles([])
     setViewMode('visitor')
-    const userArticles = await articleApi.listByUser({ authorID: targetID, page: 1, pageSize: 50 }, null).catch((error) => {
-      logRequestError('加载用户投稿失败', error)
-      return { articles: [] }
-    })
     setArticles(userArticles.articles ?? [])
   }
 
   const showVisitorPreview = async () => {
+    if (viewMode === 'visitor') {
+      setActiveTab('home')
+      return
+    }
     const targetID = Number(readCurrentUser()?.id ?? profile.id ?? 0)
-    setActiveTab('submissions')
+    setViewMode('visitor')
+    setActiveTab('home')
+    setLikedArticles([])
     if (!targetID) {
-      setViewMode('visitor')
       return
     }
     try {
@@ -209,6 +215,7 @@ export default function ProfileView({ userID, publicView = false, hideHeader = f
       try {
         setLoading(true)
         if (canLoadPublicProfile && userID) {
+          setActiveTab('home')
           await loadVisitorProfile(userID)
           return
         }
@@ -302,10 +309,10 @@ export default function ProfileView({ userID, publicView = false, hideHeader = f
     }
   }
 
-  const renderWorks = (items: Article[], emptyTitle: string, emptyText: string) => loading
+  const renderWorks = (items: Article[], emptyTitle: string, emptyText: string, showAuthor = false) => loading
     ? <div className="space-empty">正在加载...</div>
     : items.length
-      ? <div className="space-work-grid">{items.map((article) => <ArticleCard article={article} key={article.id} />)}</div>
+      ? <div className="space-work-grid">{items.map((article) => <ArticleCard article={article} key={article.id} showAuthor={showAuthor} />)}</div>
       : <div className="space-empty"><strong>{emptyTitle}</strong><span>{emptyText}</span></div>
 
   const canEditProfile = viewMode === 'owner' && !publicView
@@ -328,7 +335,7 @@ export default function ProfileView({ userID, publicView = false, hideHeader = f
           <section className="space-section"><header><div><h2>最近投稿</h2><span>{formatCount(articleCount)} 个作品</span></div><button type="button" onClick={() => setActiveTab('submissions')}>查看更多</button></header>{renderWorks(articles.slice(0, 6), '还没有投稿', viewMode === 'owner' ? '去创作中心发布第一篇作品吧。' : '这个用户还没有公开作品。')}</section>
         </>}
         {activeTab === 'home' && viewMode === 'visitor' && <section className="space-section"><header><div><h2>投稿</h2><span>{formatCount(articleCount)} 个作品</span></div></header>{renderWorks(articles, '还没有投稿', '发布后的作品会出现在这里。')}</section>}
-        {activeTab === 'likes' && <section className="space-section"><header><div><h2>点赞</h2><span>{likedArticles.length} 条记录</span></div></header>{renderWorks(likedArticles, '还没有点赞内容', viewMode === 'owner' ? '点过赞的作品会出现在这里。' : '访客暂时看不到更多点赞内容。')}</section>}
+        {activeTab === 'likes' && <section className="space-section"><header><div><h2>点赞</h2><span>{likedArticles.length} 条记录</span></div></header>{renderWorks(likedArticles, '还没有点赞内容', viewMode === 'owner' ? '点过赞的作品会出现在这里。' : '访客暂时看不到更多点赞内容。', true)}</section>}
         {activeTab === 'favorites' && <section className="space-section"><header><div><h2>收藏</h2><span>{formatCount(favoriteCount)} 个收藏</span></div></header><div className="space-empty"><strong>收藏功能待开放</strong><span>后端返回收藏数后，这里会展示收藏夹列表。</span></div></section>}
         {activeTab === 'submissions' && <section className="space-section"><header><div><h2>投稿</h2><span>{formatCount(articleCount)} 个作品</span></div>{viewMode === 'owner' && <button type="button" onClick={() => navigate('/admin/create')}>发布作品</button>}</header>{renderWorks(articles, '还没有投稿', '发布后的作品会出现在这里。')}</section>}
         {activeTab === 'settings' && <form className="space-settings" onSubmit={(event) => void submit(event)}><header><span>PROFILE DETAILS</span><h2>个人资料</h2><p>完善你的基础信息，这些内容会展示在个人空间和后台资料中。</p></header><div className="profile-fields"><label>昵称<input value={profile.username} minLength={2} maxLength={50} disabled={loading || saving} onChange={(event) => setProfile((current) => ({ ...current, username: event.target.value }))} /></label><label>邮箱<input value={profile.email} disabled /></label><label>手机<input value={profile.phone} maxLength={20} disabled={loading || saving} onChange={(event) => setProfile((current) => ({ ...current, phone: event.target.value }))} /></label><label className="profile-select-label">性别<div className="profile-select" ref={sexMenuRef}><button type="button" className="profile-select-trigger" aria-haspopup="listbox" aria-expanded={sexOpen} disabled={loading || saving} onClick={() => setSexOpen((open) => !open)}><span>{sexLabel(profile.sex)}</span><i aria-hidden="true" /></button>{sexOpen && <div className="profile-select-menu" role="listbox" aria-label="性别">{sexOptions.map((option) => <button type="button" role="option" aria-selected={profile.sex === option.value} className={profile.sex === option.value ? 'selected' : ''} key={option.value || 'unset'} onClick={() => { setProfile((current) => ({ ...current, sex: option.value })); setSexOpen(false) }}>{option.label}</button>)}</div>}</div></label><label className="profile-date-label">生日<div className="profile-date" ref={birthdayMenuRef}><button type="button" className="profile-date-trigger" aria-haspopup="dialog" aria-expanded={birthdayOpen} disabled={loading || saving} onClick={() => setBirthdayOpen((open) => !open)}><span className={profile.birthday ? '' : 'placeholder'}>{formatBirthdayLabel(profile.birthday)}</span><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="5" width="16" height="15" rx="2" /><path d="M8 3v4M16 3v4M4 10h16" /></svg></button>{birthdayOpen && <div className="profile-date-menu" role="dialog" aria-label="选择生日"><div className="profile-date-head"><button type="button" aria-label="上一年" className="year" onClick={() => setBirthdayMonth((month) => addYears(month, -1))}>«</button><button type="button" aria-label="上个月" onClick={() => setBirthdayMonth((month) => addMonths(month, -1))}>‹</button><strong>{birthdayMonth.getFullYear()}年{pad2(birthdayMonth.getMonth() + 1)}月</strong><button type="button" aria-label="下个月" onClick={() => setBirthdayMonth((month) => addMonths(month, 1))}>›</button><button type="button" aria-label="下一年" className="year" onClick={() => setBirthdayMonth((month) => addYears(month, 1))}>»</button></div><div className="profile-date-week">{birthdayWeekdays.map((day) => <span key={day}>{day}</span>)}</div><div className="profile-date-grid">{birthdayDays.map(({ date, inMonth }) => { const selected = sameDay(selectedBirthday, date); const today = sameDay(new Date(), date); return <button type="button" key={toBirthdayValue(date)} className={`${inMonth ? '' : 'outside'}${selected ? ' selected' : ''}${today ? ' today' : ''}`} onClick={() => { setProfile((current) => ({ ...current, birthday: toBirthdayValue(date) })); setBirthdayOpen(false) }}>{date.getDate()}</button> })}</div><div className="profile-date-actions"><button type="button" onClick={() => setProfile((current) => ({ ...current, birthday: '' }))}>清除</button><button type="button" onClick={() => { const today = new Date(); setProfile((current) => ({ ...current, birthday: toBirthdayValue(today) })); setBirthdayMonth(new Date(today.getFullYear(), today.getMonth(), 1)); setBirthdayOpen(false) }}>今天</button></div></div>}</div></label><label>签名<input value={profile.signature} maxLength={255} disabled={loading || saving} onChange={(event) => setProfile((current) => ({ ...current, signature: event.target.value }))} /></label></div><footer><button className="profile-save" type="submit" disabled={loading || saving}>{saving ? '保存中...' : '保存资料'}</button></footer></form>}
