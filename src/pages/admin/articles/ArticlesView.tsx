@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { articleApi } from '@/shared/api/v1/article'
+import { userApi } from '@/shared/api/v1/user'
 import { navigate } from '@/shared/hooks/usePathname'
 import { resolveStorageUrl } from '@/shared/lib/storage'
 import type { Article } from '@/shared/types/article'
+import type { CurrentUser } from '@/shared/types/user'
 import { logRequestError } from '@/shared/lib/request-error'
 import { readCurrentUser } from '@/shared/lib/current-user'
 import './ArticlesView.css'
@@ -126,33 +128,42 @@ export default function ArticlesView({ mode = 'dashboard' }: { mode?: 'dashboard
   const [drafts, setDrafts] = useState<Article[]>([])
   const [publishedTotal, setPublishedTotal] = useState(0)
   const [draftTotal, setDraftTotal] = useState(0)
+  const [profileStats, setProfileStats] = useState<Partial<CurrentUser>>(() => readCurrentUser())
   const [loading, setLoading] = useState(true)
 
   const stats = useMemo(() => {
+    const receiveLikeCount = profileStats.receive_like_count ?? sumBy(articles, (item) => item.likeCount)
+    const receiveFavorCount = profileStats.receive_favor_count ?? sumBy(articles, (item) => item.favorCount)
+
     return [
       { label: '已发布', value: publishedTotal },
       { label: '草稿', value: draftTotal },
       { label: '浏览', value: sumBy(articles, (item) => item.viewCount) },
-      { label: '点赞', value: sumBy(articles, (item) => item.likeCount) },
-      { label: '收藏', value: sumBy(articles, (item) => item.favorCount) },
+      { label: '收到点赞', value: receiveLikeCount },
+      { label: '收到收藏', value: receiveFavorCount },
       { label: '评论', value: sumBy(articles, (item) => item.commentCount) },
       { label: '全部作品', value: publishedTotal + draftTotal },
     ]
-  }, [articles, draftTotal, publishedTotal])
+  }, [articles, draftTotal, profileStats.receive_favor_count, profileStats.receive_like_count, publishedTotal])
   const trend = useMemo(() => buildSevenDayTrend(articles), [articles])
 
   const loadArticles = async () => {
     try {
       setLoading(true)
       const currentUser = readCurrentUser() as { id?: number }
-      const [publishedResult, draftResult] = await Promise.all([
+      const [publishedResult, draftResult, profileResult] = await Promise.all([
         articleApi.listByUser({ authorID: currentUser.id, page: 1, pageSize: 50 }),
         articleApi.listDrafts({ page: 1, pageSize: 50 }),
+        userApi.getProfile().catch((error) => {
+          logRequestError('加载用户统计失败', error)
+          return null
+        }),
       ])
       setArticles(publishedResult.articles ?? [])
       setDrafts(draftResult.articles ?? [])
       setPublishedTotal(publishedResult.total ?? publishedResult.articles?.length ?? 0)
       setDraftTotal(draftResult.total ?? draftResult.articles?.length ?? 0)
+      if (profileResult) setProfileStats(profileResult)
     } catch (error) {
       logRequestError('加载我的文章失败', error)
     } finally {

@@ -79,7 +79,7 @@ export default function AdminPage() {
   return (
     <>
       <PublicHeader pathname={path} />
-      <main className="admin-page admin-page-with-public-nav">
+      <main className={`admin-page admin-page-with-public-nav${tab === 'create' ? ' admin-page-compose' : ''}`}>
         <AdminSidebar tab={tab} role={currentUser.role ?? 'user'} mode={sidebarMode} onChange={changeTab} />
         <section className="admin-main">
           <div className="admin-content">

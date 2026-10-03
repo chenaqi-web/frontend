@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { articleApi } from '@/shared/api/v1/article'
 import { categoryApi } from '@/shared/api/v1/category'
 import AppLink from '@/shared/ui/AppLink'
@@ -6,28 +6,31 @@ import type { Article } from '@/shared/types/article'
 import type { Category, CategoryType } from '@/shared/types/category'
 import { resolveStorageUrl } from '@/shared/lib/storage'
 import { logRequestError } from '@/shared/lib/request-error'
+import { getCategoryName, OTHER_CATEGORY_NAME } from '@/shared/lib/category'
 import './BlogPage.css'
 
 const PAGE_SIZE = 12
 type CategoryGroup = { type: CategoryType; categories: Category[] }
+type SelectedCategory = number | null
 const formatDate = (value: number) => new Date(value > 1_000_000_000_000 ? value : value * 1000).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' })
 
 export default function BlogPage() {
   const [groups, setGroups] = useState<CategoryGroup[]>([])
   const [selectedType, setSelectedType] = useState(0)
-  const [selectedCategory, setSelectedCategory] = useState(0)
+  const [selectedCategory, setSelectedCategory] = useState<SelectedCategory>(null)
   const [articles, setArticles] = useState<Article[]>([])
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(false)
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const secondaryScrollerRef = useRef<HTMLDivElement>(null)
 
   const applyQueryFromUrl = () => {
     const nextQuery = new URLSearchParams(window.location.search).get('q')?.trim() ?? ''
     setPage(1)
     setSelectedType(0)
-    setSelectedCategory(0)
+    setSelectedCategory(null)
     setQuery(nextQuery)
   }
 
@@ -55,7 +58,7 @@ export default function BlogPage() {
     setError('');
     const params = {page, pageSize: PAGE_SIZE};
     const selectedChildren = groups.find((group) => group.type.id === selectedType)?.categories ?? [];
-    const request = query ? articleApi.search(query, params) : selectedCategory ? articleApi.byCategory(selectedCategory, params) : selectedType ? Promise.all(selectedChildren.map((category) => articleApi.byCategory(category.id, params))).then((responses) => ({articles: responses.flatMap((response) => response.articles ?? [])})) : articleApi.list(params);
+    const request = query ? articleApi.search(query, params) : selectedCategory !== null ? articleApi.byCategory(selectedCategory, params) : selectedType ? Promise.all(selectedChildren.map((category) => articleApi.byCategory(category.id, params))).then((responses) => ({articles: responses.flatMap((response) => response.articles ?? [])})) : articleApi.list(params);
     void request.then(({articles: nextArticles}) => {
       if (!active) return;
       const next = nextArticles ?? [];
@@ -80,33 +83,38 @@ export default function BlogPage() {
   }
   const clearFilters = () => resetAnd(() => {
     setSelectedType(0);
-    setSelectedCategory(0);
+    setSelectedCategory(null);
     setQuery('')
   })
+  const scrollSecondary = (direction: -1 | 1) => {
+    secondaryScrollerRef.current?.scrollBy({ left: direction * 320, behavior: 'smooth' })
+  }
 
   return <main className="front-blog-page">
-    <section className="front-filter-panel" aria-label="文章分类">
-      <header className="front-category-title"><i aria-hidden="true"/><strong>文章分类</strong></header>
-      <div className="front-filter-row"><strong>主题分类</strong>
-        <div className="front-filter-options">
-          <button type="button" className={!selectedType ? 'active' : ''} onClick={clearFilters}>全部</button>
-          {groups.map((group) => <button type="button" className={selectedType === group.type.id ? 'active' : ''}
-                                         key={group.type.id} onClick={() => resetAnd(() => {
-            setSelectedType(group.type.id);
-            setSelectedCategory(0);
+    <section className="front-channel-bar" aria-label="文章分类">
+      <div className="front-channel-primary">
+        <button type="button" className="front-channel-hot" disabled>热门</button>
+        <div className="front-channel-list">
+          <button type="button" className={!selectedType && selectedCategory === null ? 'active' : ''} onClick={clearFilters}>全部</button>
+          <button type="button" className={!selectedType && selectedCategory === 0 ? 'active' : ''} onClick={() => resetAnd(() => {
+            setSelectedType(0)
+            setSelectedCategory(0)
             setQuery('')
-          })}>{group.type.name}<small>{group.categories.length}</small></button>)}</div>
-      </div>
-      {selectedType > 0 && <div className="front-filter-row front-secondary-filter"><strong>细分类型</strong>
-        <div className="front-filter-options">
-          <button type="button" className={!selectedCategory ? 'active' : ''}
-                  onClick={() => resetAnd(() => setSelectedCategory(0))}>全部细分
-          </button>
-          {activeChildren.map((category) => <button type="button"
-                                                    className={selectedCategory === category.id ? 'active' : ''}
-                                                    key={category.id}
-                                                    onClick={() => resetAnd(() => setSelectedCategory(category.id))}>{category.name}</button>)}
+          })}>{OTHER_CATEGORY_NAME}</button>
+          {groups.map((group) => <button type="button" className={selectedType === group.type.id ? 'active' : ''} key={group.type.id} onClick={() => resetAnd(() => {
+            setSelectedType(group.type.id)
+            setSelectedCategory(null)
+            setQuery('')
+          })}>{group.type.name}</button>)}
         </div>
+      </div>
+      {selectedType > 0 && <div className="front-channel-secondary">
+        <button type="button" className="front-channel-arrow" aria-label="向左查看更多二级分类" onClick={() => scrollSecondary(-1)}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6 9 12l6 6" /></svg></button>
+        <div className="front-channel-scroll" ref={secondaryScrollerRef}>
+          <button type="button" className={selectedCategory === null ? 'active' : ''} onClick={() => resetAnd(() => setSelectedCategory(null))}>全部细分</button>
+          {activeChildren.map((category) => <button type="button" className={selectedCategory === category.id ? 'active' : ''} key={category.id} onClick={() => resetAnd(() => setSelectedCategory(category.id))}>{category.name}</button>)}
+        </div>
+        <button type="button" className="front-channel-arrow" aria-label="向右查看更多二级分类" onClick={() => scrollSecondary(1)}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg></button>
       </div>}
     </section>
     <section className="front-blog-results" aria-live="polite" aria-busy={loading}>
@@ -122,7 +130,7 @@ export default function BlogPage() {
                 <span>{article.title.slice(0, 1)}</span>}</div>
             <div className="front-article-copy">
               <h3>{article.title}</h3>
-              <footer><span className="front-author front-author-text">作者：{article.authorName || 'Renai 成员'}</span><span className="front-card-meta">分类：{categoryNames.get(article.categoryID) ?? '未分类'}</span><time className="front-card-meta">{formatDate(article.createdAt)}</time>
+              <footer><span className="front-author front-author-text">作者：{article.authorName || 'Renai 成员'}</span><span className="front-card-meta">分类：{getCategoryName(article.categoryID, categoryNames)}</span><time className="front-card-meta">{formatDate(article.createdAt)}</time>
               </footer>
             </div>
           </AppLink>)}</div>

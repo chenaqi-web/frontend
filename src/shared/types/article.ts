@@ -42,7 +42,7 @@ export interface CreateArticleRequest {
   summary?: string
   content: string
   coverImage?: string
-  categoryID: number
+  categoryID?: number
   isTop?: boolean
   isPublish?: boolean
   /** 由服务端�?token 注入，无需传�?*/
