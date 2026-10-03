@@ -36,9 +36,8 @@ export const authApi = {
   },
 
   logout(token?: string) {
-    return request<null>('/v1/auth/logout', { method: 'GET', ...(token ? { token } : {}) }).then((data) => {
+    return request<null>('/v1/auth/logout', { method: 'GET', ...(token ? { token } : {}) }).finally(() => {
       clearAccessToken()
-      return data
     })
   },
 }

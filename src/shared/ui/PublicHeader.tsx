@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
-import { clearAccessToken } from '@/shared/api/http'
+import { authApi } from '@/shared/api/v1/auth'
+import { ACCESS_TOKEN_KEY, AUTH_TOKEN_EVENT } from '@/shared/config/auth'
 import { clearCurrentUser, readCurrentUser } from '@/shared/lib/current-user'
 import { navigate } from '@/shared/hooks/usePathname'
 import { resolveStorageUrl } from '@/shared/lib/storage'
@@ -38,8 +39,8 @@ const navItems = [
 export default function PublicHeader({ pathname, overlay = false, scrolled = false }: { pathname: string; overlay?: boolean; scrolled?: boolean }) {
   const [keyword, setKeyword] = useState('')
   const [tip, setTip] = useState('')
+  const [loggedIn, setLoggedIn] = useState(() => Boolean(localStorage.getItem(ACCESS_TOKEN_KEY)))
   const currentUser = readCurrentUser() as CurrentUser
-  const loggedIn = Boolean(localStorage.getItem('renai_access_token'))
   const avatar = resolveStorageUrl(currentUser.avatar ?? '')
   const initial = (currentUser.username || 'U').slice(0, 1).toUpperCase()
   const transparent = overlay && !scrolled
@@ -51,6 +52,12 @@ export default function PublicHeader({ pathname, overlay = false, scrolled = fal
     return () => window.clearTimeout(timer)
   }, [tip])
 
+  useEffect(() => {
+    const syncAuth = () => setLoggedIn(Boolean(localStorage.getItem(ACCESS_TOKEN_KEY)))
+    window.addEventListener(AUTH_TOKEN_EVENT, syncAuth)
+    return () => window.removeEventListener(AUTH_TOKEN_EVENT, syncAuth)
+  }, [])
+
   const submitSearch = (event: FormEvent) => {
     event.preventDefault()
     const q = keyword.trim()
@@ -58,8 +65,12 @@ export default function PublicHeader({ pathname, overlay = false, scrolled = fal
     window.dispatchEvent(new CustomEvent('renai:blog-search', { detail: q }))
   }
 
-  const logout = () => {
-    clearAccessToken()
+  const logout = async () => {
+    try {
+      await authApi.logout()
+    } catch {
+      // authApi.logout clears the local token even if the server already rejected it.
+    }
     clearCurrentUser()
     navigate('/login')
   }

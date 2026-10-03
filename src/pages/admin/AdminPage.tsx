@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { clearAccessToken } from '@/shared/api/http'
+import { authApi } from '@/shared/api/v1/auth'
 import { navigate, usePathname } from '@/shared/hooks/usePathname'
 import PublicHeader from '@/shared/ui/PublicHeader'
 import AdminSidebar from '@/pages/admin/ui/AdminSidebar'
@@ -38,7 +38,7 @@ export default function AdminPage() {
   useEffect(() => setTab(tabFromPath(path)), [path])
 
   const logout = () => {
-    clearAccessToken()
+    void authApi.logout().catch(() => undefined)
     clearCurrentUser()
     navigate('/login')
   }

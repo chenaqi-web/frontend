@@ -1,5 +1,5 @@
 import { env } from '@/shared/config/env'
-import { ACCESS_TOKEN_KEY } from '@/shared/config/auth'
+import { ACCESS_TOKEN_KEY, AUTH_TOKEN_EVENT } from '@/shared/config/auth'
 import type { ApiResponse } from '@/shared/types/api'
 
 export interface RequestOptions {
@@ -17,17 +17,28 @@ export function getAccessToken() {
   return localStorage.getItem(ACCESS_TOKEN_KEY)
 }
 
-export function setAccessToken(token: string) {
-  localStorage.setItem(ACCESS_TOKEN_KEY, token)
+function notifyAuthTokenUpdated() {
+  window.dispatchEvent(new Event(AUTH_TOKEN_EVENT))
+}
+
+export function setAccessToken(token?: string | null) {
+  const normalized = token?.trim()
+  if (!normalized) {
+    clearAccessToken()
+    return
+  }
+  localStorage.setItem(ACCESS_TOKEN_KEY, normalized)
+  notifyAuthTokenUpdated()
 }
 
 export function clearAccessToken() {
   localStorage.removeItem(ACCESS_TOKEN_KEY)
+  notifyAuthTokenUpdated()
 }
 
 function headers(auth: boolean, tokenOverride?: string | null) {
   const result = new Headers({ Accept: 'application/json', 'Content-Type': 'application/json' })
-  const token = auth ? (tokenOverride === undefined ? getAccessToken() : tokenOverride) : null
+  const token = auth ? (tokenOverride === undefined ? getAccessToken() : tokenOverride)?.trim() : null
   if (token) result.set('Authorization', `Bearer ${token}`)
   return result
 }

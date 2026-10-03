@@ -45,7 +45,7 @@ export default function LoginPage() {
         : await authApi.emailLogin({ email: String(data.get('email')), code: String(data.get('code')) })
       saveCurrentUser({ id: result.id, username: result.username, avatar: result.avatar, role: result.role, status: result.status })
       try {
-        saveCurrentUser(await userApi.current())
+        saveCurrentUser(await userApi.current(result.access_token))
       } catch (profileError) {
         logRequestError('登录后加载用户信息失败', profileError)
       }

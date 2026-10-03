@@ -133,6 +133,7 @@ export default function ProfileView({ userID, publicView = false, hideHeader = f
   const [birthdayMonth, setBirthdayMonth] = useState(() => getCalendarMonth(profile.birthday))
   const sexMenuRef = useRef<HTMLDivElement>(null)
   const birthdayMenuRef = useRef<HTMLDivElement>(null)
+  const loadedKeyRef = useRef('')
 
   const profileCounts = profile as ProfileCounts
   const favoriteCount = readCount(profileCounts, ['favor_count', 'collection_count', 'collectionCount', 'favorite_count', 'favoriteCount'])
@@ -211,6 +212,9 @@ export default function ProfileView({ userID, publicView = false, hideHeader = f
   }
 
   useEffect(() => {
+    const loadKey = `${canLoadPublicProfile ? 'public' : 'owner'}:${userID ?? ''}`
+    if (loadedKeyRef.current === loadKey) return
+    loadedKeyRef.current = loadKey
     const load = async () => {
       try {
         setLoading(true)
